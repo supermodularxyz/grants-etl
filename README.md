@@ -19,8 +19,8 @@ docker compose up
 - Login using default login details:
 
 ```
-Email: bliss@ghostffco.de
-Password: Admin
+Email: sybilx@supermodular.xyz
+Password: admin
 ```
 
 - Load and configure your server:
