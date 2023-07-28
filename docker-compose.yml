@@ -20,7 +20,7 @@ services:
     ports:
       - "5555:80"
     environment:
-      PGADMIN_DEFAULT_EMAIL: bliss@ghostffco.de
+      PGADMIN_DEFAULT_EMAIL: sybilx@supermodular.xyz
       PGADMIN_DEFAULT_PASSWORD: admin
     volumes:
       - ./data/pgadmin-data:/var/lib/pgadmin
