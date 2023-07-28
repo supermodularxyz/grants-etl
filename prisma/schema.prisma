@@ -1,0 +1,97 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id      Int    @id @default(autoincrement())
+  address String @unique
+  votes   Vote[]
+}
+
+model Program {
+  id             Int     @id @default(autoincrement())
+  programAddress String  @unique
+  Rounds         Round[]
+}
+
+model Round {
+  id                     Int                @id @default(autoincrement())
+  amountUSD              Int
+  votes                  Int
+  token                  String
+  matchAmount            String
+  matchAmountUSD         Float
+  uniqueContributors     Int
+  applicationMetaPtr     String
+  applicationMetadata    Json
+  metaPtr                String
+  metadata               Json
+  applicationsStartTime  BigInt
+  applicationsEndTime    BigInt
+  roundStartTime         BigInt
+  roundEndTime           BigInt
+  createdAtBlock         Int
+  updatedAtBlock         Int
+  // user generated fields
+  chainId                Int
+  roundId                String
+  programContractAddress String?
+  program                Program?           @relation(fields: [programContractAddress], references: [programAddress])
+  projects               ProjectsInRounds[]
+  Vote                   Vote[]
+
+  @@unique([chainId, roundId], name: "uid")
+}
+
+model ProjectsInRounds {
+  // id                  String  @unique
+  roundId             Int
+  projectId           Int
+  status              String
+  amountUSD           Float
+  votes               Int
+  uniqueContributors  Int
+  project_name        String
+  project_desc        String
+  project_website     String
+  applicationMetadata Json?
+  round               Round   @relation(fields: [roundId], references: [id])
+  project             Project @relation(fields: [projectId], references: [id])
+
+  @@id([roundId, projectId])
+}
+
+model Project {
+  id         Int                @id @default(autoincrement())
+  projectKey String             @unique
+  rounds     ProjectsInRounds[]
+  votes      Vote[]
+}
+
+model Vote {
+  id               Int     @id @default(autoincrement())
+  transaction      String
+  blockNumber      Int
+  projectId        Int
+  project          Project @relation(fields: [projectId], references: [id])
+  applicationId    String?
+  roundId          Int
+  round            Round   @relation(fields: [roundId], references: [id])
+  voter            String
+  voterUser        User    @relation(fields: [voter], references: [address])
+  grantAddress     String
+  token            String
+  amount           String
+  amountUSD        Float
+  amountRoundToken String
+
+  @@unique([transaction, roundId], name: "uid")
+}
