@@ -22,9 +22,4 @@ services:
     environment:
       PGADMIN_DEFAULT_EMAIL: sybilx@supermodular.xyz
       PGADMIN_DEFAULT_PASSWORD: admin
-    volumes:
-      - ./data/pgadmin-data:/var/lib/pgadmin
     restart: unless-stopped
-# volumes:
-#   db:
-#     driver: local
