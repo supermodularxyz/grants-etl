@@ -6,11 +6,11 @@
 
 ## Table of Contents
 
-* [🚪 Introduction](#-introduction)
-* [🏁 Quick start](#-quick-start)
-* [⚙️ Run sample query](#-run-sample-query)
-* [💪🏾 Local Development](#-local-development)
-* [😎 Contribute](#-contribute)
+- [🚪 Introduction](#-introduction)
+- [🏁 Quick start](#-quick-start)
+- [🪄 Run sample query](#-run-sample-query)
+- [💪🏾 Local Development](#-local-development)
+- [😎 Contribute](#-contribute)
 
 ## 🚪 Introduction
 
@@ -43,14 +43,14 @@ Password: admin
 | Port              | 5432                 |
 | Username          | postgres             |
 | Password          | postgres             |
-  
+
 ![PGAdmin add new server](./assets/pgadmin-dashboard.png)
 ![PGAdmin server name](./assets/server-hostname.png)
 ![PGAdmin add server config](./assets/server-config.png)
 
 All done 🎉
 
-## ⚙️ Run sample query
+## 🪄 Run sample query
 
 - Click on the Query tool (image below) and copy any sample query from `./queries` 😉
 
