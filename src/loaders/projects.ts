@@ -10,8 +10,6 @@ type Props = {
   prisma: Prisma
 }
 
-const _handleRoundProject = async () => {}
-
 const manageProjects = async ({ chainId, prisma }: Props) => {
   // load rounds for chainId
   const rounds = await prisma.round.findMany({
