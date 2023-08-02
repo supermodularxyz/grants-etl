@@ -2,6 +2,7 @@ version: '3'
 services:
   postgres:
     image: postgres
+    container_name: postgres
     restart: unless-stopped
     environment:
       - POSTGRES_USER=postgres
@@ -22,4 +23,12 @@ services:
     environment:
       PGADMIN_DEFAULT_EMAIL: sybilx@supermodular.xyz
       PGADMIN_DEFAULT_PASSWORD: admin
+    restart: unless-stopped
+  metabase:
+    image: metabase/metabase
+    container_name: metabase
+    depends_on:
+      - postgres
+    ports:
+      - 3000:3000
     restart: unless-stopped
