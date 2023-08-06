@@ -1,23 +1,22 @@
 version: '3'
 services:
-  postgres:
-    image: postgres
-    container_name: postgres
+  grantsdb:
+    image: ghostffcode/grants-db:latest
+    container_name: grantsdb
     restart: unless-stopped
     environment:
+      - PGDATA=/var/lib/postgresql/pgdata
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=Grants
     ports:
       - '5432:5432'
     command: ["postgres", "-cshared_preload_libraries=pg_stat_statements"]
-    volumes: 
-      - ./data/postgres:/var/lib/postgresql/data
   pgadmin:
     image: dpage/pgadmin4
     container_name: pgadmin
     depends_on:
-      - postgres
+      - grantsdb
     ports:
       - "5555:80"
     environment:
@@ -25,10 +24,16 @@ services:
       PGADMIN_DEFAULT_PASSWORD: admin
     restart: unless-stopped
   metabase:
-    image: metabase/metabase
+    image: ghostffcode/grants-metabase:latest
     container_name: metabase
     depends_on:
-      - postgres
+      - grantsdb
     ports:
       - 3000:3000
+    environment:
+      MB_DB_TYPE: postgres
+      MB_DB_PORT: 5432
+      MB_DB_USER: postgres
+      MB_DB_PASS: postgres
+      MB_DB_HOST: grantsdb
     restart: unless-stopped
