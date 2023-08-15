@@ -1,13 +1,10 @@
 import { PrismaClient } from '@prisma/client'
-import { PrismaClientOptions, DefaultArgs } from '@prisma/client/runtime/library'
 import { getAddress } from 'viem'
 import { grantFetch } from '../utils'
 
-type Prisma = PrismaClient<PrismaClientOptions, never, DefaultArgs>
-
 type Props = {
   chainId: string
-  prisma: Prisma
+  prisma: PrismaClient
 }
 
 const manageRounds = async ({ chainId, prisma }: Props) => {
@@ -39,6 +36,15 @@ const manageRounds = async ({ chainId, prisma }: Props) => {
   )
 
   const programsList = Array.from(data.programs).map((p) => ({ programAddress: p })) as { programAddress: string }[]
+
+  const roundsTotal = data.rounds.length
+  const programsTotal = programsList.length
+
+  console.log(
+    `${data.rounds.length} round${roundsTotal !== 1 ? 's' : ''} found across ${programsTotal} program${
+      programsTotal !== 1 ? 's' : ''
+    }`
+  )
 
   await prisma.program.createMany({
     data: programsList,

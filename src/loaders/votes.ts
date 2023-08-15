@@ -1,13 +1,10 @@
 import { PrismaClient } from '@prisma/client'
-import { PrismaClientOptions, DefaultArgs } from '@prisma/client/runtime/library'
 import { getAddress } from 'viem'
 import { grantFetch } from '../utils'
 
-type Prisma = PrismaClient<PrismaClientOptions, never, DefaultArgs>
-
 type Props = {
   chainId: string
-  prisma: Prisma
+  prisma: PrismaClient
 }
 
 const manageVotes = async ({ chainId, prisma }: Props) => {
@@ -22,13 +19,23 @@ const manageVotes = async ({ chainId, prisma }: Props) => {
     },
   })
 
-  for (const round of rounds) {
+  for (const [rIndex, round] of rounds.entries()) {
     const votesList = (await grantFetch(`${chainId}/rounds/${round.roundId}/votes.json`)) as any[]
 
-    for (const vote of votesList) {
-      const address = getAddress(vote.voter)
+    // logger(`Committing vote: ${vote.transaction}`)
+    if (votesList.length > 0) {
+      process.stdout.write(`\n`)
+    }
+    process.stdout.write(
+      `${votesList.length} votes found for round (${rIndex + 1}/${rounds.length}): ${round.roundId} \n`
+    )
 
-      const user = await prisma.user.upsert({
+    for (const [index, vote] of votesList.entries()) {
+      const address = getAddress(vote.voter)
+      const currentCount = index + 1
+      const isLast = index + 1 === votesList.length
+
+      await prisma.user.upsert({
         where: {
           address,
         },
@@ -44,23 +51,31 @@ const manageVotes = async ({ chainId, prisma }: Props) => {
         },
       })
 
-      await prisma.vote.upsert({
-        where: {
-          uid: {
-            transaction: vote.transaction,
-            roundId: round.id,
+      if (project) {
+        await prisma.vote.upsert({
+          where: {
+            uid: {
+              transaction: vote.transaction,
+              roundId: round.id,
+              projectId: project.id,
+            },
           },
-        },
-        update: {},
-        create: {
-          ...vote,
-          id: undefined,
-          projectId: project?.id,
-          roundId: round.id,
-        },
-      })
+          update: {},
+          create: {
+            ...vote,
+            id: undefined,
+            projectId: project.id,
+            roundId: round.id,
+            chainId: Number(chainId),
+          },
+        })
 
-      console.log(`Committed vote ${vote.transaction}`)
+        process.stdout.write(
+          ` => Committed ${currentCount} of ${votesList.length} votes (${
+            Math.round((currentCount / votesList.length) * 10000) / 100
+          }%) ${isLast ? '\n' : '\r'}`
+        )
+      }
     }
   }
 }

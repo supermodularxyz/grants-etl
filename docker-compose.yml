@@ -2,6 +2,7 @@ version: '3'
 services:
   grantsdb:
     image: ghostffcode/grants-db:latest
+    platform: linux/amd64
     container_name: grantsdb
     restart: unless-stopped
     environment:
@@ -25,6 +26,7 @@ services:
     restart: unless-stopped
   metabase:
     image: ghostffcode/grants-metabase:latest
+    platform: linux/amd64
     container_name: metabase
     depends_on:
       - grantsdb

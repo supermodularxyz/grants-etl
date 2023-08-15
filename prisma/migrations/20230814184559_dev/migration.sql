@@ -47,11 +47,17 @@ CREATE TABLE "ProjectsInRounds" (
     "status" TEXT NOT NULL,
     "amountUSD" DOUBLE PRECISION NOT NULL,
     "votes" INTEGER NOT NULL,
+    "payoutAddress" TEXT NOT NULL,
     "uniqueContributors" INTEGER NOT NULL,
     "project_name" TEXT NOT NULL,
     "project_desc" TEXT NOT NULL,
     "project_website" TEXT NOT NULL,
+    "user_github" TEXT,
+    "project_github" TEXT,
     "applicationMetadata" JSONB,
+    "transaction" TEXT NOT NULL,
+    "tx_gasPrice" BIGINT,
+    "tx_gasSpent" BIGINT,
 
     CONSTRAINT "ProjectsInRounds_pkey" PRIMARY KEY ("roundId","projectId")
 );
@@ -70,6 +76,7 @@ CREATE TABLE "Vote" (
     "transaction" TEXT NOT NULL,
     "blockNumber" INTEGER NOT NULL,
     "projectId" INTEGER NOT NULL,
+    "chainId" INTEGER NOT NULL,
     "applicationId" TEXT,
     "roundId" INTEGER NOT NULL,
     "voter" TEXT NOT NULL,
@@ -78,6 +85,9 @@ CREATE TABLE "Vote" (
     "amount" TEXT NOT NULL,
     "amountUSD" DOUBLE PRECISION NOT NULL,
     "amountRoundToken" TEXT NOT NULL,
+    "tx_gasPrice" BIGINT NOT NULL DEFAULT 0,
+    "tx_gasSpent" BIGINT NOT NULL DEFAULT 0,
+    "tx_timestamp" BIGINT NOT NULL DEFAULT 0,
 
     CONSTRAINT "Vote_pkey" PRIMARY KEY ("id")
 );
@@ -95,7 +105,7 @@ CREATE UNIQUE INDEX "Round_chainId_roundId_key" ON "Round"("chainId", "roundId")
 CREATE UNIQUE INDEX "Project_projectKey_key" ON "Project"("projectKey");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Vote_transaction_roundId_key" ON "Vote"("transaction", "roundId");
+CREATE UNIQUE INDEX "Vote_transaction_roundId_projectId_key" ON "Vote"("transaction", "roundId", "projectId");
 
 -- AddForeignKey
 ALTER TABLE "Round" ADD CONSTRAINT "Round_programContractAddress_fkey" FOREIGN KEY ("programContractAddress") REFERENCES "Program"("programAddress") ON DELETE SET NULL ON UPDATE CASCADE;
