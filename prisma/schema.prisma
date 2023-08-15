@@ -58,11 +58,17 @@ model ProjectsInRounds {
   status              String
   amountUSD           Float
   votes               Int
+  payoutAddress       String
   uniqueContributors  Int
   project_name        String
   project_desc        String
   project_website     String
+  user_github         String?
+  project_github      String?
   applicationMetadata Json?
+  transaction         String
+  tx_gasPrice         BigInt?
+  tx_gasSpent         BigInt?
   round               Round   @relation(fields: [roundId], references: [id])
   project             Project @relation(fields: [projectId], references: [id])
 
@@ -81,6 +87,7 @@ model Vote {
   transaction      String
   blockNumber      Int
   projectId        Int
+  chainId          Int
   project          Project @relation(fields: [projectId], references: [id])
   applicationId    String?
   roundId          Int
@@ -92,6 +99,9 @@ model Vote {
   amount           String
   amountUSD        Float
   amountRoundToken String
+  tx_gasPrice      BigInt  @default(0)
+  tx_gasSpent      BigInt  @default(0)
+  tx_timestamp     BigInt  @default(0)
 
-  @@unique([transaction, roundId], name: "uid")
+  @@unique([transaction, roundId, projectId], name: "uid")
 }
