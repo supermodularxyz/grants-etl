@@ -1,13 +1,9 @@
 import { PrismaClient } from '@prisma/client'
-import { PrismaClientOptions, DefaultArgs } from '@prisma/client/runtime/library'
-import { getAddress } from 'viem'
 import { grantFetch } from '../utils'
-
-type Prisma = PrismaClient<PrismaClientOptions, never, DefaultArgs>
 
 type Props = {
   chainId: string
-  prisma: Prisma
+  prisma: PrismaClient
 }
 
 const manageProjects = async ({ chainId, prisma }: Props) => {
