@@ -6,11 +6,15 @@
 
 ## Table of Contents
 
-- [🚪 Introduction](#-introduction)
-- [🏁 Quick start](#-quick-start)
-- [🪄 Run sample query](#-run-sample-query)
-- [💪🏾 Local Development](#-local-development)
-- [😎 Contribute](#-contribute)
+- [🔭 Grants Data cache \& ETL Pipeline](#-grants-data-cache--etl-pipeline)
+  - [Table of Contents](#table-of-contents)
+  - [🚪 Introduction](#-introduction)
+  - [🏁 Quick start](#-quick-start)
+    - [PGAdmin](#pgadmin)
+    - [Metabase](#metabase)
+  - [🪄 Run sample query](#-run-sample-query)
+  - [💪🏾 Local Development](#-local-development)
+  - [😎 Contribute](#-contribute)
 
 ## 🚪 Introduction
 
@@ -25,6 +29,8 @@ This is a NodeJS/typescript ETL framework, powered by the [Allo indexer](https:/
 ```bash
 docker compose up
 ```
+
+### PGAdmin
 
 - Once all containers are running and healthy, open `http://localhost:5555` to open PGAdmin.
 
@@ -48,13 +54,25 @@ Password: admin
 ![PGAdmin server name](./assets/server-hostname.png)
 ![PGAdmin add server config](./assets/server-config.png)
 
-All done 🎉
+### Metabase
+
+- Once all containers are running and healthy, open `http://localhost:3000` to open Metabase UI.
+
+- Login using default login details:
+
+```
+Email: anon@supermodular.xyz
+Password: password420
+```
+
+![Metabase Dashboard](./assets/metabase-dashboard.png)
 
 ## 🪄 Run sample query
 
 - Click on the Query tool (image below) and copy any sample query from `./queries` 😉
 
 ![PGAdmin run new query](./assets/pgadmin-newquery.png)
+![Metabase run new query](./assets/metabase-newquery.png)
 
 ## 💪🏾 Local Development
 
