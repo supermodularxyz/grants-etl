@@ -1,7 +1,8 @@
 import 'dotenv/config'
 import { PrismaClient } from '@prisma/client'
 import minimist from 'minimist'
-import { manageProjects, manageApplications, manageRounds, manageVotes } from './loaders'
+import { manageApplications, manageRounds, manageTx, manageVotes } from './loaders'
+import { initialFetch } from './utils'
 
 const argv = minimist(process.argv.slice(2))
 
@@ -11,16 +12,27 @@ async function main() {
   // ... you will write your Prisma Client queries here
   const chainId = argv.chainId ?? '1' // default to mainnet
 
+  await initialFetch(chainId)
+
+  console.log(`Starting programs and rounds indexing`)
+
   // manage the programs & rounds first
   await manageRounds({ chainId, prisma })
+
+  console.log(`Starting round applications indexing`)
 
   // manage applications
   await manageApplications({ chainId, prisma })
 
+  console.log(`Starting projects' votes indexing`)
+
   // manage votes
   await manageVotes({ chainId, prisma })
 
-  // manage contributions/votes
+  console.log(`Starting loading tx metadata for votes`)
+
+  // manage vote tx metadata
+  await manageTx({ chainId, prisma })
 }
 
 main()
