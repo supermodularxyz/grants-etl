@@ -22,6 +22,7 @@
     "chainsauce": "^1.0.19",
     "chalk": "^5.3.0",
     "cli-spinners": "^2.9.0",
+    "date-fns": "^2.30.0",
     "dotenv": "^16.3.1",
     "ethers": "5.7.2",
     "minimist": "^1.2.8",

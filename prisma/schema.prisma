@@ -11,9 +11,21 @@ datasource db {
 }
 
 model User {
-  id      Int    @id @default(autoincrement())
-  address String @unique
-  votes   Vote[]
+  id       Int       @id @default(autoincrement())
+  address  String    @unique
+  votes    Vote[]
+  passport Passport?
+}
+
+model Passport {
+  id             Int    @id @default(autoincrement())
+  userAddress    String @unique
+  score          Float
+  scoreThreshold Float
+  scoreTimestamp BigInt
+  user           User   @relation(fields: [userAddress], references: [address])
+  updatedAt      Int
+  stamps         Json[]
 }
 
 model Program {

@@ -8,7 +8,7 @@ type Props = {
 }
 
 const manageTx = async ({ chainId, prisma }: Props): Promise<any> => {
-  const take = 150
+  const take = 1000
   let totalVotes = 0
 
   const client = clients[Number(chainId) as keyof typeof clients]

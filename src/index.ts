@@ -1,7 +1,7 @@
 import 'dotenv/config'
 import { PrismaClient } from '@prisma/client'
 import minimist from 'minimist'
-import { manageApplications, manageRounds, manageTx, manageVotes } from './loaders'
+import { manageApplications, managePassports, manageRounds, manageTx, manageVotes } from './loaders'
 import { initialFetch } from './utils'
 
 const argv = minimist(process.argv.slice(2))
@@ -33,6 +33,10 @@ async function main() {
 
   // manage vote tx metadata
   await manageTx({ chainId, prisma })
+
+  console.log(`Starting passport indexing`)
+
+  await managePassports({ chainId, prisma })
 }
 
 main()
