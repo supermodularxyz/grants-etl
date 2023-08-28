@@ -5,7 +5,10 @@
   "license": "MIT",
   "scripts": {
     "start": "ts-node ./src/index.ts",
-    "etl": "ts-node ./src/index.ts"
+    "etl": "ts-node ./src/index.ts",
+    "etl:1": "ts-node ./src/index.ts --chainId 1",
+    "etl:10": "ts-node ./src/index.ts --chainId 10",
+    "etl:424": "ts-node ./src/index.ts --chainId 424"
   },
   "devDependencies": {
     "@types/node": "^20.4.4",
