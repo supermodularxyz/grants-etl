@@ -1,7 +1,7 @@
 import 'dotenv/config'
 import { PrismaClient } from '@prisma/client'
 import minimist from 'minimist'
-import { manageApplications, managePassports, manageRounds, manageTx, manageVotes } from './loaders'
+import { manageApplications, managePassports, manageRounds, manageTx, manageVotes, managerUserHistory } from './loaders'
 import { initialFetch } from './utils'
 
 const argv = minimist(process.argv.slice(2))
@@ -37,6 +37,10 @@ async function main() {
   console.log(`Starting passport indexing`)
 
   await managePassports({ chainId, prisma })
+
+  console.log(`Starting user tx logs from dune`)
+
+  await managerUserHistory({ chainId, prisma })
 }
 
 main()
