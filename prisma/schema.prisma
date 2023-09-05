@@ -28,6 +28,19 @@ model Passport {
   stamps         Json[]
 }
 
+model UserHistory {
+  id               Int      @id @default(autoincrement())
+  wallet           String
+  direction        String
+  block_number     BigInt
+  block_time       DateTime
+  tx_hash          String
+  neighbor_address String
+  symbol           String   @default("")
+  token_amount     Float    @default(0)
+  chain            String
+}
+
 model Program {
   id             Int     @id @default(autoincrement())
   programAddress String  @unique
