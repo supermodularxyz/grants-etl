@@ -8,16 +8,18 @@
     "etl": "ts-node ./src/index.ts",
     "etl:1": "ts-node ./src/index.ts --chainId 1",
     "etl:10": "ts-node ./src/index.ts --chainId 10",
+    "etl:250": "ts-node ./src/index.ts --chainId 250",
     "etl:424": "ts-node ./src/index.ts --chainId 424"
   },
   "devDependencies": {
     "@types/node": "^20.4.4",
-    "prisma": "^5.1.1",
+    "prisma": "^5.2.0",
     "ts-node": "^10.9.1",
     "typescript": "^5.1.6"
   },
   "dependencies": {
-    "@prisma/client": "^5.1.1",
+    "@cowprotocol/ts-dune-client": "^0.0.2",
+    "@prisma/client": "^5.2.0",
     "@types/async": "^3.2.20",
     "@types/minimist": "^1.2.2",
     "async": "^3.2.4",
