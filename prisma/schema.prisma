@@ -25,7 +25,15 @@ model Passport {
   scoreTimestamp BigInt
   user           User   @relation(fields: [userAddress], references: [address])
   updatedAt      Int
-  stamps         Json[]
+}
+
+model Stamp {
+  id         Int       @id @default(autoincrement())
+  address    String
+  provider   String
+  stamp      Json
+  created_at DateTime?
+  updated_at DateTime?
 }
 
 model UserHistory {
