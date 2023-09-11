@@ -23,6 +23,7 @@ const managerUserHistory = async ({ chainId, prisma }: Props): Promise<any> => {
   const userCount = await prisma.user.count()
 
   console.log(`Indexing ${userCount} users`)
+  console.time('history')
 
   if (userCount === 0) {
     console.log(`No users found`)
@@ -32,9 +33,10 @@ const managerUserHistory = async ({ chainId, prisma }: Props): Promise<any> => {
   let cursor
 
   do {
+    console.time('Index')
     // pick off users based on id and increment till end of list
     const users: { id: number; address: string }[] = await prisma.user.findMany({
-      take: 1000,
+      take: 200,
       orderBy: {
         id: 'asc',
       },
@@ -51,6 +53,8 @@ const managerUserHistory = async ({ chainId, prisma }: Props): Promise<any> => {
 
     const client = new DuneClient(process.env.DUNE_API_KEY ?? '')
     const duneRes = await client.refresh(2974152, [QueryParameter.text('wallet_list', userAddresses)])
+
+    console.log(`Dune request completed, starting row grouping`)
 
     const rows = (duneRes.result?.rows || []) as Row[]
 
@@ -74,6 +78,8 @@ const managerUserHistory = async ({ chainId, prisma }: Props): Promise<any> => {
       }
     }
 
+    console.log(`Row grouping completed, ${data.length} groups found. Creating data chunks`)
+
     const chunkSize = 300
     const chunks = []
 
@@ -82,6 +88,8 @@ const managerUserHistory = async ({ chainId, prisma }: Props): Promise<any> => {
       chunks.push(chunk)
     }
 
+    console.log(`Data chunks done, writing chunks to database`)
+
     for (const chunk of chunks) {
       await prisma.userHistory.createMany({
         data: chunk,
@@ -89,6 +97,8 @@ const managerUserHistory = async ({ chainId, prisma }: Props): Promise<any> => {
     }
 
     console.log(`At user index ${cursor}`)
+    console.timeEnd('Index')
+    console.timeLog('history')
   } while ((cursor as number) > 0)
 }
 
