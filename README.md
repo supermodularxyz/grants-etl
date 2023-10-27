@@ -18,7 +18,7 @@
 
 ## 🚪 Introduction
 
-This is a NodeJS/typescript ETL framework, powered by the [Allo indexer](https://github.com/gitcoinco/allo-indexer) [data API](https://indexer-grants-stack.gitcoin.co). This ETL pipeline queries the Allo indexer data API and populates the existing Postgres db in docker (see [docker-compose.yml](./docker-compose.yml) file). Database schema is managed using [Prisma](https://www.prisma.io/) (a Typescript ORM).
+This is a NodeJS/typescript ETL framework, powered by the [Allo indexer](https://github.com/gitcoinco/allo-indexer) [data API](https://indexer-production.fly.dev/data/). This ETL pipeline queries the Allo indexer data API and populates the existing Postgres db in docker (see [docker-compose.yml](./docker-compose.yml) file). Database schema is managed using [Prisma](https://www.prisma.io/) (a Typescript ORM).
 
 ## 🏁 Quick start
 
