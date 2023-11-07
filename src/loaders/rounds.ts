@@ -32,7 +32,7 @@ const manageRounds = async ({ chainId, prisma, roundId }: Props) => {
         applicationsEndTime: handleDateString(r.applicationsEndTime),
         roundStartTime: handleDateString(r.roundStartTime),
         roundEndTime: handleDateString(r.roundEndTime),
-        chainId: chainId,
+        chainId: Number(chainId),
         roundId: r.id,
         programContractAddress,
       })
