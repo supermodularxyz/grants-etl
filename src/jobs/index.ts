@@ -6,8 +6,16 @@ const rule = new schedule.RecurrenceRule()
 rule.hour = 14
 rule.minute = 14
 
-const job = schedule.scheduleJob(rule, async function () {
+const fantomJob = schedule.scheduleJob(rule, async function () {
   await main({ chainId: '250' })
+
+  console.log(`Completed indexing for chainId = 250`)
+})
+
+const opJob = schedule.scheduleJob(rule, async function () {
+  await main({ chainId: '10' })
+
+  console.log(`Completed indexing for chainId = 250`)
 })
 
 // const scheduler = new ToadScheduler()
