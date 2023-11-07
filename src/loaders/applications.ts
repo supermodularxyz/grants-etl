@@ -4,17 +4,27 @@ import { getApplicationTx, grantFetch } from '../utils'
 type Props = {
   chainId: string
   prisma: PrismaClient
+  roundId?: string
 }
 
-const manageApplications = async ({ chainId, prisma }: Props) => {
+const manageApplications = async ({ chainId, prisma, roundId }: Props) => {
+  let roundFilter: { chainId: number; addedLastApplications: boolean; roundId?: string } = {
+    chainId: Number(chainId),
+    addedLastApplications: false,
+  }
+
+  if (roundId) {
+    roundFilter = { ...roundFilter, roundId }
+  }
+
   // load rounds for chainId
   const rounds = await prisma.round.findMany({
-    where: {
-      chainId: Number(chainId),
-    },
+    where: roundFilter,
     select: {
       id: true,
       roundId: true,
+      addedLastApplications: true,
+      applicationsEndTime: true,
     },
   })
 
@@ -22,9 +32,9 @@ const manageApplications = async ({ chainId, prisma }: Props) => {
     const applicationList = (await grantFetch(`${chainId}/rounds/${round.roundId}/applications.json`)) as any[]
 
     console.log(
-      `${applicationList.length} application${applicationList.length !== 1 ? 's' : ''} found for round (${rIndex + 1}/${
-        rounds.length
-      }) : ${round.roundId}`
+      `${applicationList.length} application${
+        applicationList.length !== 1 ? 's' : ''
+      } found for active application round (${rIndex + 1}/${rounds.length}) : ${round.roundId}`
     )
 
     for (const [index, application] of applicationList.entries()) {
@@ -86,6 +96,20 @@ const manageApplications = async ({ chainId, prisma }: Props) => {
           Math.round((currentCount / applicationList.length) * 10000) / 100
         }%) ${isLast ? '\n' : '\r'}`
       )
+    }
+
+    // check if the round application ended and update database field for round
+    if (!round.addedLastApplications && Math.trunc(Date.now() / 1000) > round.applicationsEndTime) {
+      await prisma.round.update({
+        where: {
+          id: round.id,
+        },
+        data: {
+          addedLastApplications: true,
+        },
+      })
+
+      console.log(`\r\n   Round application period has ended, disabling further indexing\r\n`)
     }
   }
 }

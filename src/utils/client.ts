@@ -1,5 +1,5 @@
 import { createPublicClient, http } from 'viem'
-import { fantom, mainnet, optimism } from 'viem/chains'
+import { fantom, mainnet, optimism, arbitrum } from 'viem/chains'
 
 export const chainConfig = {
   1: {
@@ -13,6 +13,10 @@ export const chainConfig = {
   250: {
     rpc: process.env.FANTOM_RPC,
     chain: fantom,
+  },
+  42161: {
+    rpc: process.env.ARB_RPC,
+    chain: arbitrum,
   },
   424: {
     rpc: process.env.PGN_RPC,
@@ -47,5 +51,6 @@ export const clients = {
   1: createClient(1),
   10: createClient(10),
   250: createClient(250),
+  42161: createClient(42161),
   424: createClient(424),
 }

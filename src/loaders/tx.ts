@@ -5,10 +5,11 @@ import { clients } from '../utils/client'
 type Props = {
   chainId: string
   prisma: PrismaClient
+  roundId?: string
 }
 
-const manageTx = async ({ chainId, prisma }: Props): Promise<any> => {
-  const take = 1000
+const manageTx = async ({ chainId, prisma, roundId }: Props): Promise<any> => {
+  const take = 500
   let totalVotes = 0
 
   const client = clients[Number(chainId) as keyof typeof clients]
@@ -19,15 +20,23 @@ const manageTx = async ({ chainId, prisma }: Props): Promise<any> => {
     return
   }
 
+  let votesFilter: { chainId: number; tx_timestamp: number; round: { roundId?: string; addedLastVotes: boolean } } = {
+    chainId: Number(chainId),
+    tx_timestamp: 0,
+    round: {
+      roundId,
+      addedLastVotes: false,
+    },
+  }
+
+  const availableRounds: Set<number> = new Set([])
+
   do {
     // load votes for chainId
     const votes = await prisma.vote.findMany({
       take,
       distinct: ['transaction'],
-      where: {
-        chainId: Number(chainId),
-        tx_timestamp: 0,
-      },
+      where: votesFilter,
       select: {
         id: true,
         transaction: true,
@@ -37,6 +46,7 @@ const manageTx = async ({ chainId, prisma }: Props): Promise<any> => {
         round: {
           select: {
             roundId: true,
+            roundEndTime: true,
           },
         },
       },
@@ -59,6 +69,11 @@ const manageTx = async ({ chainId, prisma }: Props): Promise<any> => {
 
     await Promise.all(
       votes.map(async (v) => {
+        // add vote round end time for later toggling
+        if (Math.trunc(Date.now() / 1000) > v.round.roundEndTime) {
+          availableRounds.add(v.roundId)
+        }
+
         // load tx & block
         const tx = (await client.getTransaction({
           hash: v.transaction as `0x${string}`,
@@ -89,6 +104,22 @@ const manageTx = async ({ chainId, prisma }: Props): Promise<any> => {
 
     console.log(`Finished tx metadata${totalVotes === take ? ', moving to next batch' : ''}`)
   } while (totalVotes === take)
+
+  // TODO : Disable rounds votes & tx indexing if it has ended
+  if (availableRounds.size > 0) {
+    await prisma.round.updateMany({
+      where: {
+        id: {
+          in: Array.from(availableRounds),
+        },
+      },
+      data: {
+        addedLastVotes: true,
+      },
+    })
+
+    console.log(`\r\n   Some rounds have ended, disabling further votes & tx indexing\r\n`)
+  }
 }
 
 export default manageTx
