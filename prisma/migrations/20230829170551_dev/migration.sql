@@ -7,6 +7,19 @@ CREATE TABLE "User" (
 );
 
 -- CreateTable
+CREATE TABLE "Passport" (
+    "id" SERIAL NOT NULL,
+    "userAddress" TEXT NOT NULL,
+    "score" DOUBLE PRECISION NOT NULL,
+    "scoreThreshold" DOUBLE PRECISION NOT NULL,
+    "scoreTimestamp" BIGINT NOT NULL,
+    "updatedAt" INTEGER NOT NULL,
+    "stamps" JSONB[],
+
+    CONSTRAINT "Passport_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "Program" (
     "id" SERIAL NOT NULL,
     "programAddress" TEXT NOT NULL,
@@ -96,6 +109,9 @@ CREATE TABLE "Vote" (
 CREATE UNIQUE INDEX "User_address_key" ON "User"("address");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "Passport_userAddress_key" ON "Passport"("userAddress");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "Program_programAddress_key" ON "Program"("programAddress");
 
 -- CreateIndex
@@ -106,6 +122,9 @@ CREATE UNIQUE INDEX "Project_projectKey_key" ON "Project"("projectKey");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Vote_transaction_roundId_projectId_key" ON "Vote"("transaction", "roundId", "projectId");
+
+-- AddForeignKey
+ALTER TABLE "Passport" ADD CONSTRAINT "Passport_userAddress_fkey" FOREIGN KEY ("userAddress") REFERENCES "User"("address") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Round" ADD CONSTRAINT "Round_programContractAddress_fkey" FOREIGN KEY ("programContractAddress") REFERENCES "Program"("programAddress") ON DELETE SET NULL ON UPDATE CASCADE;
