@@ -4,14 +4,14 @@
   "main": "index.js",
   "license": "MIT",
   "scripts": {
-    "job": "ts-node ./src/jobs/index.ts",
     "start": "ts-node ./src/index.ts",
     "etl": "ts-node ./src/index.ts",
-    "etl:1": "ts-node ./src/index.ts --chainId 1",
-    "etl:10": "ts-node ./src/index.ts --chainId 10",
-    "etl:250": "ts-node ./src/index.ts --chainId 250",
-    "etl:424": "ts-node ./src/index.ts --chainId 424",
-    "etl:42161": "ts-node ./src/index.ts --chainId 42161"
+    "job": "ts-node ./src/jobs/index.ts",
+    "job:1": "ts-node ./src/jobs/index.ts --chainId 1",
+    "job:10": "ts-node ./src/jobs/index.ts --chainId 10",
+    "job:250": "ts-node ./src/jobs/index.ts --chainId 250",
+    "job:424": "ts-node ./src/jobs/index.ts --chainId 424",
+    "job:42161": "ts-node ./src/jobs/index.ts --chainId 42161"
   },
   "devDependencies": {
     "@types/node": "^20.4.4",

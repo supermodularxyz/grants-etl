@@ -1,22 +1,31 @@
 // import { ToadScheduler, SimpleIntervalJob, AsyncTask } from 'toad-scheduler'
 import schedule from 'node-schedule'
+import minimist from 'minimist'
 import { main } from '../main'
 
+const argv = minimist(process.argv.slice(2))
+
 const rule = new schedule.RecurrenceRule()
-rule.hour = 14
-rule.minute = 14
+rule.hour = 8
+rule.minute = 15
 
-const fantomJob = schedule.scheduleJob(rule, async function () {
-  await main({ chainId: '250' })
+const chainId = argv.chainId
 
-  console.log(`Completed indexing for chainId = 250`)
+if (!chainId || chainId.length === 0) {
+  console.log(`You have to specify a chainId for the cron jobs`)
+
+  process.exit(1)
+}
+
+console.log(`Scheduling job for chainId = ${chainId}`)
+
+const job = schedule.scheduleJob(rule, async function () {
+  await main({ chainId })
+
+  console.log(`Completed indexing for chainId = ${argv.chainId}`)
 })
 
-const opJob = schedule.scheduleJob(rule, async function () {
-  await main({ chainId: '10' })
-
-  console.log(`Completed indexing for chainId = 250`)
-})
+console.log(`Scheduled job (${job.name}) for chainId = ${chainId}`)
 
 // const scheduler = new ToadScheduler()
 
