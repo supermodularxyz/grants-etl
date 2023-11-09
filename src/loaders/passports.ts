@@ -40,7 +40,6 @@ const managePassports = async ({ chainId, prisma }: Props) => {
             scoreThreshold: Number(passport.evidence.threshold),
             scoreTimestamp: Number(format(new Date(passport.last_score_timestamp), 't')),
             updatedAt: Math.trunc(Date.now() / 1000),
-            stamps: [],
           },
         })
 
