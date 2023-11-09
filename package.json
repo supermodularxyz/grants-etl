@@ -21,6 +21,7 @@
     "typescript": "^5.1.6"
   },
   "dependencies": {
+    "@cowprotocol/ts-dune-client": "^0.0.2",
     "@prisma/client": "^5.2.0",
     "@types/async": "^3.2.20",
     "@types/minimist": "^1.2.2",
