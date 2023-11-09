@@ -1,6 +1,6 @@
 import 'dotenv/config'
 import { PrismaClient } from '@prisma/client'
-import { manageApplications, managePassports, manageRounds, manageTx, manageVotes } from './loaders'
+import { manageApplications, manageRounds, manageTx, manageVotes } from './loaders'
 import { initialFetch } from './utils'
 import { getAddress, isAddress } from 'viem'
 
@@ -30,10 +30,6 @@ export async function main({ chainId = '1', roundId }: { chainId: string; roundI
 
   // manage vote tx metadata
   await manageTx({ chainId, prisma })
-
-  // console.log(`Starting passport indexing`)
-
-  // await managePassports({ chainId, prisma })
 
   // disconnect from database at the end
   await prisma.$disconnect()
