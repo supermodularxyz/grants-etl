@@ -1,7 +1,7 @@
 // import { ToadScheduler, SimpleIntervalJob, AsyncTask } from 'toad-scheduler'
 import schedule from 'node-schedule'
 import minimist from 'minimist'
-import { main } from '../main'
+import { main, disconnect } from '../main'
 
 const argv = minimist(process.argv.slice(2))
 
@@ -20,7 +20,13 @@ if (!chainId || chainId.length === 0) {
 console.log(`Scheduling job for chainId = ${chainId}`)
 
 const job = schedule.scheduleJob(rule, async function () {
-  await main({ chainId })
+  try {
+    await main({ chainId })
+  } catch (error) {
+    console.log(error)
+  }
+
+  await disconnect()
 
   console.log(`Completed indexing for chainId = ${argv.chainId}`)
 })

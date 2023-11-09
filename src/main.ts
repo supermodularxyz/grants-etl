@@ -38,3 +38,7 @@ export async function main({ chainId = '1', roundId }: { chainId: string; roundI
   // disconnect from database at the end
   await prisma.$disconnect()
 }
+
+export const disconnect = async () => {
+  await prisma.$disconnect()
+}
