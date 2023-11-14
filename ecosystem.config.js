@@ -13,6 +13,12 @@ module.exports = {
       args: 'run job:10',
     },
     {
+      name: 'job:137',
+      script: 'yarn',
+      time: true,
+      args: 'run job:137',
+    },
+    {
       name: 'job:250',
       script: 'yarn',
       time: true,
