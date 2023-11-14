@@ -5,17 +5,26 @@ import { grantFetch } from '../utils'
 type Props = {
   chainId: string
   prisma: PrismaClient
+  roundId?: string
 }
 
-const manageVotes = async ({ chainId, prisma }: Props) => {
+const manageVotes = async ({ chainId, prisma, roundId }: Props) => {
+  let roundFilter: { chainId: number; roundId?: string; addedLastVotes: boolean } = {
+    chainId: Number(chainId),
+    addedLastVotes: false,
+  }
+
+  if (roundId) {
+    roundFilter = { ...roundFilter, roundId }
+  }
+
   // load rounds for chainId
   const rounds = await prisma.round.findMany({
-    where: {
-      chainId: Number(chainId),
-    },
+    where: roundFilter,
     select: {
       id: true,
       roundId: true,
+      roundEndTime: true,
     },
   })
 
@@ -77,6 +86,19 @@ const manageVotes = async ({ chainId, prisma }: Props) => {
         )
       }
     }
+
+    // if (Math.trunc(Date.now() / 1000) > round.roundEndTime) {
+    //   await prisma.round.update({
+    //     where: {
+    //       id: round.id,
+    //     },
+    //     data: {
+    //       addedLastVotes: true,
+    //     },
+    //   })
+
+    //   console.log(`\r\n   Round has ended, disabling further votes indexing\r\n`)
+    // }
   }
 }
 

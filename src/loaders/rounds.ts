@@ -1,14 +1,25 @@
 import { PrismaClient } from '@prisma/client'
 import { getAddress } from 'viem'
-import { grantFetch } from '../utils'
+import { grantFetch, handleDateString } from '../utils'
 
 type Props = {
   chainId: string
   prisma: PrismaClient
+  roundId?: string
 }
 
-const manageRounds = async ({ chainId, prisma }: Props) => {
-  const roundsData = (await grantFetch(`${chainId}/rounds.json`)) as any[]
+const manageRounds = async ({ chainId, prisma, roundId }: Props) => {
+  let roundsData = (await grantFetch(`${chainId}/rounds.json`)) as any[]
+
+  // if specific round is set, filter it from roundsData and continue
+  if (roundId) {
+    roundsData = roundsData.filter((r) => getAddress(r.id) === roundId)
+
+    if (roundsData.length === 0) {
+      console.error('This round does not exist. Please make sure to specify the right chainId for the round')
+      process.exit(1)
+    }
+  }
 
   const data = roundsData.reduce(
     (acc, r) => {
@@ -17,11 +28,11 @@ const manageRounds = async ({ chainId, prisma }: Props) => {
       acc.rounds.push({
         ...r,
         id: undefined,
-        applicationsStartTime: String(r.applicationsStartTime),
-        applicationsEndTime: String(r.applicationsEndTime),
-        roundStartTime: String(r.roundStartTime),
-        roundEndTime: String(r.roundEndTime),
-        chainId: chainId,
+        applicationsStartTime: handleDateString(r.applicationsStartTime),
+        applicationsEndTime: handleDateString(r.applicationsEndTime),
+        roundStartTime: handleDateString(r.roundStartTime),
+        roundEndTime: handleDateString(r.roundEndTime),
+        chainId: Number(chainId),
         roundId: r.id,
         programContractAddress,
       })

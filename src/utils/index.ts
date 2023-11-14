@@ -70,3 +70,9 @@ export const getApplicationTx = async ({ chainId, projectId, block, roundId }: A
 export const logger = (...args: any) => {
   console.log(...args)
 }
+
+export const handleDateString = (timestamp: any) => {
+  const formattedDateString = new Date(Number(timestamp)).valueOf()
+
+  return String(Number.isNaN(formattedDateString) ? new Date().valueOf() + 157680000 : formattedDateString)
+}
