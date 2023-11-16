@@ -9,6 +9,7 @@
     "job": "ts-node ./src/jobs/index.ts",
     "job:1": "ts-node ./src/jobs/index.ts --chainId 1",
     "job:10": "ts-node ./src/jobs/index.ts --chainId 10",
+    "job:137": "ts-node ./src/jobs/index.ts --chainId 137",
     "job:250": "ts-node ./src/jobs/index.ts --chainId 250",
     "job:424": "ts-node ./src/jobs/index.ts --chainId 424",
     "job:42161": "ts-node ./src/jobs/index.ts --chainId 42161"
