@@ -32,13 +32,21 @@ const managePassports = async ({ prisma }: Props) => {
       })
 
       if (user) {
-        await prisma.passport.create({
-          data: {
+        const update = {
+          score: Number(passport.evidence.rawScore),
+          scoreThreshold: Number(passport.evidence.threshold),
+          scoreTimestamp: Number(format(new Date(passport.last_score_timestamp), 't')),
+          updatedAt: Math.trunc(Date.now() / 1000),
+        }
+
+        await prisma.passport.upsert({
+          where: {
             userAddress: user.address,
-            score: Number(passport.evidence.rawScore),
-            scoreThreshold: Number(passport.evidence.threshold),
-            scoreTimestamp: Number(format(new Date(passport.last_score_timestamp), 't')),
-            updatedAt: Math.trunc(Date.now() / 1000),
+          },
+          update,
+          create: {
+            userAddress: user.address,
+            ...update,
           },
         })
 
