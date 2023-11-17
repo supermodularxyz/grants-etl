@@ -4,11 +4,10 @@ import { grantFetch } from '../utils'
 import { format } from 'date-fns'
 
 type Props = {
-  chainId: string
   prisma: PrismaClient
 }
 
-const managePassports = async ({ chainId, prisma }: Props) => {
+const managePassports = async ({ prisma }: Props) => {
   const passportScores = (await grantFetch(`passport_scores.json`)) as any[]
   const passportsCount = passportScores.length
 

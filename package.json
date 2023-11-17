@@ -12,7 +12,8 @@
     "job:137": "ts-node ./src/jobs/index.ts --chainId 137",
     "job:250": "ts-node ./src/jobs/index.ts --chainId 250",
     "job:424": "ts-node ./src/jobs/index.ts --chainId 424",
-    "job:42161": "ts-node ./src/jobs/index.ts --chainId 42161"
+    "job:42161": "ts-node ./src/jobs/index.ts --chainId 42161",
+    "job:passport": "ts-node ./src/jobs/index.ts --passport"
   },
   "devDependencies": {
     "@types/node": "^20.4.4",
