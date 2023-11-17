@@ -25,7 +25,7 @@ services:
       PGADMIN_DEFAULT_PASSWORD: admin
     restart: unless-stopped
   metabase:
-    image: ghostffcode/grants-metabase:latest
+    image: metabase/metabase:latest
     platform: linux/amd64
     container_name: metabase
     depends_on:
