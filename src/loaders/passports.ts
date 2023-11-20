@@ -15,7 +15,7 @@ type Passport = {
   passport: { address: string }
   score: string
   last_score_timestamp: string
-  evidence: {
+  evidence?: {
     rawScore: string
     threshold: string
   }
@@ -41,7 +41,7 @@ const managePassports = async ({ prisma }: Props) => {
     const { value, done } = await rl.next()
     if (done) break
 
-    const isUserAddress = isAddress(value.passport.address)
+    const isUserAddress = isAddress(value.passport?.address)
 
     if (isUserAddress) {
       const user = await prisma.user.findUnique({
@@ -52,8 +52,8 @@ const managePassports = async ({ prisma }: Props) => {
 
       if (user) {
         const update = {
-          score: Number(value.evidence.rawScore),
-          scoreThreshold: Number(value.evidence.threshold),
+          score: Number(value.evidence?.rawScore || '0'),
+          scoreThreshold: Number(value.evidence?.threshold || '0'),
           scoreTimestamp: Number(format(new Date(value.last_score_timestamp), 't')),
           updatedAt: Math.trunc(Date.now() / 1000),
           stamps: value.stamp_scores,
