@@ -3,7 +3,7 @@ import { Readable } from 'stream'
 import { finished } from 'stream/promises'
 import { ReadableStream } from 'stream/web'
 import { PrismaClient } from '@prisma/client'
-import { isAddress } from 'viem'
+import { getAddress, isAddress } from 'viem'
 import { format } from 'date-fns'
 import * as jsonl from 'node-jsonl'
 
@@ -44,10 +44,14 @@ const managePassports = async ({ prisma }: Props) => {
     const isUserAddress = isAddress(value.passport?.address)
 
     if (isUserAddress) {
-      const user = await prisma.user.findUnique({
+      const user = await prisma.user.upsert({
         where: {
-          address: value.passport.address,
+          address: getAddress(value.passport.address),
         },
+        create: {
+          address: getAddress(value.passport.address),
+        },
+        update: {},
       })
 
       if (user) {
