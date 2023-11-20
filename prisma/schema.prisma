@@ -25,6 +25,7 @@ model Passport {
   scoreTimestamp BigInt
   user           User   @relation(fields: [userAddress], references: [address])
   updatedAt      Int
+  stamps         Json?
 }
 
 model Stamp {
