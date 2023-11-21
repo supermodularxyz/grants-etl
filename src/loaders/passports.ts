@@ -1,52 +1,83 @@
+import fs from 'fs'
+import { Readable } from 'stream'
+import { finished } from 'stream/promises'
+import { ReadableStream } from 'stream/web'
 import { PrismaClient } from '@prisma/client'
 import { getAddress, isAddress } from 'viem'
-import { grantFetch } from '../utils'
 import { format } from 'date-fns'
+import * as jsonl from 'node-jsonl'
 
 type Props = {
-  chainId: string
   prisma: PrismaClient
 }
 
-const managePassports = async ({ chainId, prisma }: Props) => {
-  const passportScores = (await grantFetch(`passport_scores.json`)) as any[]
-  const passportsCount = passportScores.length
+type Passport = {
+  passport: { address: string }
+  score: string
+  last_score_timestamp: string
+  evidence?: {
+    rawScore: string
+    threshold: string
+  }
+  stamp_scores: Record<string, string>
+}
 
-  console.log(`${passportsCount} user passport scores found`)
+const managePassports = async ({ prisma }: Props) => {
+  const stream = fs.createWriteStream('./passport.jsonl')
+  const { body } = await fetch('https://public.scorer.gitcoin.co/passport_scores/registry_score.jsonl')
 
-  if (passportsCount === 0) {
-    return
+  if (body) {
+    console.log(`Start writing Passport data from stream`)
+    await finished(Readable.fromWeb(body as ReadableStream<any>).pipe(stream))
   }
 
-  for (const [index, passport] of passportScores.entries()) {
-    if (isAddress(passport.address)) {
-      const address = getAddress(passport.address)
-      const currentCount = index + 1
-      const isLast = index + 1 === passportScores.length
+  console.log(`Finished writing Passport data from stream`)
 
-      // TODO : Load stamps for this current user from redash
+  const rl = jsonl.readlines<Passport>('./passport.jsonl')
 
-      const user = await prisma.user.findUnique({
+  let count = 0
+
+  while (true) {
+    const { value, done } = await rl.next()
+    if (done) break
+
+    const isUserAddress = isAddress(value.passport?.address)
+
+    if (isUserAddress) {
+      const user = await prisma.user.upsert({
         where: {
-          address,
+          address: getAddress(value.passport.address),
         },
+        create: {
+          address: getAddress(value.passport.address),
+        },
+        update: {},
       })
 
       if (user) {
-        await prisma.passport.create({
-          data: {
+        const update = {
+          score: Number(value.evidence?.rawScore || '0'),
+          scoreThreshold: Number(value.evidence?.threshold || '0'),
+          scoreTimestamp: Number(format(new Date(value.last_score_timestamp), 't')),
+          updatedAt: Math.trunc(Date.now() / 1000),
+          stamps: value.stamp_scores,
+        }
+
+        await prisma.passport.upsert({
+          where: {
             userAddress: user.address,
-            score: Number(passport.evidence.rawScore),
-            scoreThreshold: Number(passport.evidence.threshold),
-            scoreTimestamp: Number(format(new Date(passport.last_score_timestamp), 't')),
-            updatedAt: Math.trunc(Date.now() / 1000),
+          },
+          update,
+          create: {
+            userAddress: user.address,
+            ...update,
           },
         })
 
+        count += 1
+
         process.stdout.write(
-          ` => Committed ${currentCount} of ${passportsCount} passports (${
-            Math.round((currentCount / passportsCount) * 10000) / 100
-          }%) ${isLast ? '\n' : '\r'}`
+          ` => Committed passport for ${value.passport.address} (${count} total!) ${done ? '\n' : '\r'}`
         )
       }
     }

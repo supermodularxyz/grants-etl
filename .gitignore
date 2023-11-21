@@ -3,3 +3,5 @@ node_modules
 .history
 .DS_Store
 .env
+passport.jsonl
+passport_scores.json

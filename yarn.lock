@@ -1254,6 +1254,11 @@ node-fetch@^3.3.1:
     fetch-blob "^3.1.4"
     formdata-polyfill "^4.0.10"
 
+node-jsonl@^0.1.0:
+  version "0.1.0"
+  resolved "https://registry.yarnpkg.com/node-jsonl/-/node-jsonl-0.1.0.tgz#e6724595df85f34e218077d9665c9f77e2e8fbc0"
+  integrity sha512-lNoAqQQDx68zexR/EZv4VFdqdzzb04bm3/WSYHqkYp0dqKHQM0jm+gkWHmxEWR3N0fNBYQQwlqJhMqKP9Kyjhg==
+
 node-schedule@^2.1.1:
   version "2.1.1"
   resolved "https://registry.yarnpkg.com/node-schedule/-/node-schedule-2.1.1.tgz#6958b2c5af8834954f69bb0a7a97c62b97185de3"

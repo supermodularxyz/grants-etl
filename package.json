@@ -12,7 +12,8 @@
     "job:137": "ts-node ./src/jobs/index.ts --chainId 137",
     "job:250": "ts-node ./src/jobs/index.ts --chainId 250",
     "job:424": "ts-node ./src/jobs/index.ts --chainId 424",
-    "job:42161": "ts-node ./src/jobs/index.ts --chainId 42161"
+    "job:42161": "ts-node ./src/jobs/index.ts --chainId 42161",
+    "job:passport": "ts-node ./src/jobs/index.ts --passport"
   },
   "devDependencies": {
     "@types/node": "^20.4.4",
@@ -35,6 +36,7 @@
     "dotenv": "^16.3.1",
     "ethers": "5.7.2",
     "minimist": "^1.2.8",
+    "node-jsonl": "^0.1.0",
     "node-schedule": "^2.1.1",
     "ora": "^7.0.1",
     "queue": "^7.0.0",
