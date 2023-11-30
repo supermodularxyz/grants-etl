@@ -8,10 +8,13 @@ type Props = {
 }
 
 const manageApplications = async ({ chainId, prisma, roundId }: Props) => {
-  let roundFilter: { chainId: number; addedLastApplications: boolean; roundId?: string } = {
+  let roundFilter: { chainId: number; roundId?: string } = {
     chainId: Number(chainId),
-    addedLastApplications: false,
   }
+  // let roundFilter: { chainId: number; addedLastApplications: boolean; roundId?: string } = {
+  //   chainId: Number(chainId),
+  //   addedLastApplications: false,
+  // }
 
   if (roundId) {
     roundFilter = { ...roundFilter, roundId }
@@ -70,7 +73,11 @@ const manageApplications = async ({ chainId, prisma, roundId }: Props) => {
             projectId: project.id,
           },
         },
-        update: {},
+        update: {
+          status: application.status,
+          amountUSD: application.amountUSD,
+          votes: application.votes,
+        },
         create: {
           roundId: round.id,
           projectId: project.id,
