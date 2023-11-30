@@ -50,6 +50,26 @@ model UserHistory {
   chain            String
 }
 
+model UserTx {
+  id        Int      @id @default(autoincrement())
+  timestamp DateTime
+  block     BigInt
+  status    String
+  method    String?
+  hash      String
+  value     String
+  // token_transfers
+  toName    String   @default("")
+  fromName  String   @default("")
+  to        String
+  from      String
+  gasUsed   BigInt
+  nonce     Int
+  chainId   String
+
+  @@unique([hash, nonce, from, chainId], name: "uid")
+}
+
 model Program {
   id             Int     @id @default(autoincrement())
   programAddress String  @unique
