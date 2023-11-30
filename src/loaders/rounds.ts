@@ -62,10 +62,24 @@ const manageRounds = async ({ chainId, prisma, roundId }: Props) => {
     skipDuplicates: true,
   })
 
-  await prisma.round.createMany({
-    data: data.rounds,
-    skipDuplicates: true,
-  })
+  // TODO : Optimize this to skip rounds that are already ended & addedLastVotes = true
+  for (const round of data.rounds) {
+    await prisma.round.upsert({
+      where: {
+        uid: {
+          chainId: Number(chainId),
+          roundId: round.roundId,
+        },
+      },
+      update: round,
+      create: round,
+    })
+  }
+
+  // await prisma.round.createMany({
+  //   data: data.rounds,
+  //   skipDuplicates: true,
+  // })
 }
 
 export default manageRounds
