@@ -1,6 +1,13 @@
 import 'dotenv/config'
 import { PrismaClient } from '@prisma/client'
-import { manageApplications, managePassports, manageRounds, manageTx, manageVotes } from './loaders'
+import {
+  manageApplications,
+  managePassports,
+  manageRounds,
+  manageTx,
+  manageVotes,
+  managerUserTxHistory,
+} from './loaders'
 import { initialFetch } from './utils'
 import { getAddress, isAddress } from 'viem'
 
@@ -30,6 +37,13 @@ export async function main({ chainId = '1', roundId }: { chainId: string; roundI
 
   // manage vote tx metadata
   await manageTx({ chainId, prisma })
+
+  // manage user tx
+  // TODO : Start with PGN tx and move to other chains later
+  if (Number(chainId) === 424) {
+    console.log(`Starting loading user tx history`)
+    await managerUserTxHistory({ chainId, prisma })
+  }
 
   // disconnect from database at the end
   await prisma.$disconnect()
