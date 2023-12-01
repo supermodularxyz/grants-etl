@@ -12,7 +12,7 @@ type Row = {
   method: string | null
   hash: string
   value: string
-  to: {
+  to?: {
     name: string
     hash: string
   }
@@ -20,9 +20,25 @@ type Row = {
     name: string
     hash: string
   }
-  gas_used: string
+  gas_used: number
   nonce: number
   // token_transfers
+}
+
+type UserTxData = {
+  timestamp: Date
+  block: number
+  status: string
+  method: string | null
+  hash: string
+  value: string
+  toName: string
+  fromName: string
+  to: string
+  from: string
+  gasUsed: number
+  nonce: number
+  chainId: number
 }
 
 const managerUserTxHistory = async ({ prisma, chainId }: Props): Promise<any> => {
@@ -64,16 +80,18 @@ const managerUserTxHistory = async ({ prisma, chainId }: Props): Promise<any> =>
       )
     )) as {
       items: Row[]
+      next_page_params?: any
     }[]
 
     console.log(`Explorer request completed, starting row grouping`)
 
-    const data = []
+    const data: UserTxData[] = []
 
     for (const row of rawTxs) {
       if (row.items) {
         for (let i = 0; i < row.items.length; i++) {
           const item = row.items[i]
+
           data.push({
             timestamp: item.timestamp,
             block: item.block,
@@ -81,16 +99,20 @@ const managerUserTxHistory = async ({ prisma, chainId }: Props): Promise<any> =>
             method: item.method,
             hash: item.hash,
             value: item.value,
-            toName: item.to.name,
-            fromName: item.from.name,
-            to: item.to.hash,
+            toName: item.to?.name ?? '',
+            fromName: item.from?.name ?? '',
+            to: item.to?.hash ?? '',
             from: item.from.hash,
             gasUsed: item.gas_used,
             nonce: item.nonce,
-            chainId,
+            chainId: Number(chainId),
             // token_transfers
           })
         }
+      }
+
+      if (row.next_page_params) {
+        console.log(row.next_page_params)
       }
     }
 

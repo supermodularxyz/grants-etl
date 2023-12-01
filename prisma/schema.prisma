@@ -65,7 +65,7 @@ model UserTx {
   from      String
   gasUsed   BigInt
   nonce     Int
-  chainId   String
+  chainId   Int
 
   @@unique([hash, nonce, from, chainId], name: "uid")
 }
