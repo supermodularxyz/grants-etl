@@ -12,7 +12,7 @@ type Props = {
 }
 
 type Passport = {
-  passport: { address: string }
+  passport: { address: string; community: number }
   score: string
   last_score_timestamp: string
   evidence?: {
@@ -42,8 +42,9 @@ const managePassports = async ({ prisma }: Props) => {
     if (done) break
 
     const isUserAddress = isAddress(value.passport?.address)
+    const isCorrectCommunity = Number(value.passport.community) === 335
 
-    if (isUserAddress) {
+    if (isUserAddress && isCorrectCommunity) {
       const user = await prisma.user.upsert({
         where: {
           address: getAddress(value.passport.address),
