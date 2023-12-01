@@ -58,8 +58,24 @@ const managerUserTxHistory = async ({ prisma, chainId }: Props): Promise<any> =>
   do {
     console.time('Index')
     // pick off users based on id and increment till end of list
-    const users: { id: number; address: string }[] = await prisma.user.findMany({
-      take: 1,
+    // const users: { id: number; address: string }[] = await prisma.user.findMany({
+    //   take: 1,
+    //   orderBy: {
+    //     id: 'asc',
+    //   },
+    //   ...(cursor && { skip: 1, cursor: { id: cursor } }),
+    // })
+
+    const users: { id: number; voter: string }[] = await prisma.vote.findMany({
+      where: {
+        chainId: 424,
+      },
+      select: {
+        id: true,
+        voter: true,
+      },
+      distinct: ['voter'],
+      take: 10,
       orderBy: {
         id: 'asc',
       },
@@ -75,7 +91,7 @@ const managerUserTxHistory = async ({ prisma, chainId }: Props): Promise<any> =>
     const rawTxs = (await Promise.all(
       users.map((user) =>
         fetch(
-          `https://explorer.publicgoods.network/api/v2/addresses/${user.address}/transactions?filter=to%20%7C%20from`
+          `https://explorer.publicgoods.network/api/v2/addresses/${user.voter}/transactions?filter=to%20%7C%20from`
         ).then((r) => r.json())
       )
     )) as {
