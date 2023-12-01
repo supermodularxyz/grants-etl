@@ -66,23 +66,26 @@ const manageApplications = async ({ chainId, prisma, roundId }: Props) => {
       const projectGithub = application.metadata?.application?.project?.projectGithub
 
       // create projectsInRounds
-      await prisma.projectsInRounds.upsert({
+      await prisma.applicationsInRounds.upsert({
         where: {
-          roundId_projectId: {
+          roundId_projectId_applicationId: {
             roundId: round.id,
             projectId: project.id,
+            applicationId: application.id,
           },
         },
         update: {
           status: application.status,
           amountUSD: application.amountUSD,
           votes: application.votes,
+          applicationId: application.id,
         },
         create: {
           roundId: round.id,
           projectId: project.id,
           status: application.status,
           amountUSD: application.amountUSD,
+          applicationId: application.id,
           votes: application.votes,
           uniqueContributors: application.uniqueContributors ?? 0,
           project_name: application.metadata?.application?.project?.title ?? '',
