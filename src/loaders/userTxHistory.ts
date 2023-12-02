@@ -57,113 +57,122 @@ const managerUserTxHistory = async ({ prisma, chainId }: Props): Promise<any> =>
   let cursor
 
   do {
-    console.time('Index')
-    // pick off users based on id and increment till end of list
-    // const users: { id: number; address: string }[] = await prisma.user.findMany({
-    //   take: 1,
-    //   orderBy: {
-    //     id: 'asc',
-    //   },
-    //   ...(cursor && { skip: 1, cursor: { id: cursor } }),
-    // })
+    try {
+      console.time('Index')
+      // pick off users based on id and increment till end of list
+      // const users: { id: number; address: string }[] = await prisma.user.findMany({
+      //   take: 1,
+      //   orderBy: {
+      //     id: 'asc',
+      //   },
+      //   ...(cursor && { skip: 1, cursor: { id: cursor } }),
+      // })
 
-    const users: { id: number; voter: string }[] = await prisma.vote.findMany({
-      where: {
-        chainId: 424,
-      },
-      select: {
-        id: true,
-        voter: true,
-      },
-      distinct: ['voter'],
-      take: 10,
-      orderBy: {
-        id: 'asc',
-      },
-      ...(cursor && { skip: 1, cursor: { id: cursor } }),
-    })
+      const users: { id: number; voter: string }[] = await prisma.vote.findMany({
+        where: {
+          chainId: Number(chainId),
+        },
+        select: {
+          id: true,
+          voter: true,
+        },
+        distinct: ['voter'],
+        take: 20,
+        orderBy: {
+          id: 'asc',
+        },
+        ...(cursor && { skip: 1, cursor: { id: cursor } }),
+      })
 
-    if (users.length === 0) {
-      break
-    }
-
-    cursor = users[users.length - 1].id
-
-    const rawTxs = (await Promise.all(
-      users.map((user) =>
-        fetch(
-          `https://explorer.publicgoods.network/api/v2/addresses/${user.voter}/transactions?filter=to%20%7C%20from`
-        ).then(async (r) => ({ address: user.voter, response: await r.json() }))
-      )
-    )) as {
-      address: string
-      response: {
-        items: Row[]
-        next_page_params?: any
-      }
-    }[]
-
-    console.log(`Explorer request completed, starting row grouping`)
-
-    const data: UserTxData[] = []
-
-    for (const row of rawTxs) {
-      let extraTxData: Row[] = []
-
-      if (row.response.next_page_params) {
-        extraTxData = await loadExtraTxData({ address: row.address, next_page_params: row.response.next_page_params })
-
-        console.log(`Loaded extraTxData`)
+      if (users.length === 0) {
+        break
       }
 
-      const txData = [...extraTxData, ...row.response.items]
+      const rawTxs = (await Promise.all(
+        users.map((user) =>
+          fetch(
+            `https://explorer.publicgoods.network/api/v2/addresses/${user.voter}/transactions?filter=to%20%7C%20from`
+          ).then(async (r) => ({ address: user.voter, response: await r.json() }))
+        )
+      )) as {
+        address: string
+        response: {
+          items: Row[]
+          next_page_params?: any
+        }
+      }[]
 
-      if (txData) {
-        for (let i = 0; i < txData.length; i++) {
-          const item = txData[i]
+      console.log(`Explorer request completed, starting row grouping`)
 
-          data.push({
-            timestamp: item.timestamp,
-            block: item.block,
-            status: item.status,
-            method: item.method,
-            hash: item.hash,
-            value: item.value,
-            toName: item.to?.name ?? '',
-            fromName: item.from?.name ?? '',
-            to: item.to?.hash ?? '',
-            from: item.from.hash,
-            gasUsed: item.gas_used,
-            nonce: item.nonce,
-            chainId: Number(chainId),
-            // token_transfers
-          })
+      const data: UserTxData[] = []
+
+      for (const row of rawTxs) {
+        let extraTxData: Row[] = []
+
+        if (row.response.next_page_params) {
+          extraTxData = await loadExtraTxData({ address: row.address, next_page_params: row.response.next_page_params })
+
+          console.log(`Loaded extraTxData`)
+        }
+
+        if (!row.response.items) {
+          console.log(`Empty Reponse Items for ${row.address}`)
+        }
+
+        const txData = [...extraTxData, ...row.response.items]
+
+        if (txData) {
+          for (let i = 0; i < txData.length; i++) {
+            const item = txData[i]
+
+            data.push({
+              timestamp: item.timestamp ?? new Date(0).toISOString(),
+              block: item.block ?? 0,
+              status: item.status ?? 'pending',
+              method: item.method,
+              hash: item.hash,
+              value: item.value,
+              toName: item.to?.name ?? '',
+              fromName: item.from?.name ?? '',
+              to: item.to?.hash ?? '',
+              from: item.from.hash,
+              gasUsed: item.gas_used ?? 0,
+              nonce: item.nonce,
+              chainId: Number(chainId),
+              // token_transfers
+            })
+          }
         }
       }
+
+      console.log(`Row grouping completed, ${data.length} groups found. Creating data chunks`)
+
+      const chunkSize = 300
+      const chunks = []
+
+      for (let i = 0; i < data.length; i += chunkSize) {
+        const chunk = data.slice(i, i + chunkSize)
+        chunks.push(chunk)
+      }
+
+      console.log(`Data chunks done, writing chunks to database`)
+
+      for (const chunk of chunks) {
+        await prisma.userTx.createMany({
+          data: chunk,
+          skipDuplicates: true,
+        })
+      }
+
+      cursor = users[users.length - 1].id
+
+      console.log(`At user index ${cursor}`)
+      console.timeEnd('Index')
+      console.timeLog('history')
+    } catch (error) {
+      console.log(`Something failed, retrying in few seconds...`)
+      await new Promise((res, rej) => setTimeout(res, 20000))
     }
-
-    console.log(`Row grouping completed, ${data.length} groups found. Creating data chunks`)
-
-    const chunkSize = 300
-    const chunks = []
-
-    for (let i = 0; i < data.length; i += chunkSize) {
-      const chunk = data.slice(i, i + chunkSize)
-      chunks.push(chunk)
-    }
-
-    console.log(`Data chunks done, writing chunks to database`)
-
-    for (const chunk of chunks) {
-      await prisma.userTx.createMany({
-        data: chunk,
-        skipDuplicates: true,
-      })
-    }
-
-    console.log(`At user index ${cursor}`)
-    console.timeEnd('Index')
-    console.timeLog('history')
   } while ((cursor as number) > 0)
 }
 
