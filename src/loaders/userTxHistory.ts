@@ -1,3 +1,4 @@
+import { loadExtraTxData } from '../utils'
 import { PrismaClient } from '@prisma/client'
 
 type Props = {
@@ -5,7 +6,7 @@ type Props = {
   prisma: PrismaClient
 }
 
-type Row = {
+export type Row = {
   timestamp: Date
   block: number
   status: string
@@ -92,11 +93,14 @@ const managerUserTxHistory = async ({ prisma, chainId }: Props): Promise<any> =>
       users.map((user) =>
         fetch(
           `https://explorer.publicgoods.network/api/v2/addresses/${user.voter}/transactions?filter=to%20%7C%20from`
-        ).then((r) => r.json())
+        ).then(async (r) => ({ address: user.voter, response: await r.json() }))
       )
     )) as {
-      items: Row[]
-      next_page_params?: any
+      address: string
+      response: {
+        items: Row[]
+        next_page_params?: any
+      }
     }[]
 
     console.log(`Explorer request completed, starting row grouping`)
@@ -104,9 +108,19 @@ const managerUserTxHistory = async ({ prisma, chainId }: Props): Promise<any> =>
     const data: UserTxData[] = []
 
     for (const row of rawTxs) {
-      if (row.items) {
-        for (let i = 0; i < row.items.length; i++) {
-          const item = row.items[i]
+      let extraTxData: Row[] = []
+
+      if (row.response.next_page_params) {
+        extraTxData = await loadExtraTxData({ address: row.address, next_page_params: row.response.next_page_params })
+
+        console.log(`Loaded extraTxData`)
+      }
+
+      const txData = [...extraTxData, ...row.response.items]
+
+      if (txData) {
+        for (let i = 0; i < txData.length; i++) {
+          const item = txData[i]
 
           data.push({
             timestamp: item.timestamp,
@@ -125,10 +139,6 @@ const managerUserTxHistory = async ({ prisma, chainId }: Props): Promise<any> =>
             // token_transfers
           })
         }
-      }
-
-      if (row.next_page_params) {
-        console.log(row.next_page_params)
       }
     }
 
