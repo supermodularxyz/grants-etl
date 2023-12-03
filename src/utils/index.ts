@@ -94,21 +94,37 @@ type ExtraParamsArgs = {
 export const loadExtraTxData = async ({ url, next_page_params }: ExtraParamsArgs): Promise<(Row | InternalRow)[]> => {
   const extraParams = Object.keys(next_page_params).reduce((acc: string, curr: string, i: number) => {
     const value = next_page_params[curr as keyof NextPageParams]
-    if (value) {
-      const prefix = acc ? '&' : ''
-      return `${acc}${prefix}${curr}=${value}`
-    }
-
-    return acc
+    const prefix = acc ? '&' : ''
+    return `${acc}${prefix}${curr}=${value}`
   }, '')
 
-  const res = (await fetch(`${url}&${extraParams}`).then((r) => r.json())) as {
-    items: Row[] | InternalRow[]
-    next_page_params?: NextPageParams
-  }
+  let success = false
+  let res = undefined
 
-  return [
-    ...res.items,
-    ...(res.next_page_params ? await loadExtraTxData({ url, next_page_params: res.next_page_params }) : []),
-  ]
+  do {
+    try {
+      res = (await fetch(`${url}&${extraParams}`).then((r) => r.json())) as {
+        items: Row[] | InternalRow[]
+        next_page_params?: NextPageParams
+      }
+
+      console.log(`Beat... ${url}`)
+
+      await new Promise((res, rej) => setTimeout(res, 1000))
+
+      success = true
+    } catch (error) {
+      console.log(`Beat failed, trying again in a second`)
+      await new Promise((res, rej) => setTimeout(res, 1000))
+    }
+  } while (!success)
+
+  if (res) {
+    return [
+      ...res.items,
+      ...(res.next_page_params ? await loadExtraTxData({ url, next_page_params: res.next_page_params }) : []),
+    ]
+  } else {
+    return []
+  }
 }

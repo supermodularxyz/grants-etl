@@ -172,7 +172,7 @@ const managerUserInternalTxHistory = async ({ prisma, chainId }: Props): Promise
       console.log(error)
 
       console.log(`Something failed, retrying in few seconds...`)
-      await new Promise((res, rej) => setTimeout(res, 20000))
+      await new Promise((res, rej) => setTimeout(res, 60000))
     }
   } while ((cursor as number) > 0)
 }
