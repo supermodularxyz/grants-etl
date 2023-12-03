@@ -70,6 +70,24 @@ model UserTx {
   @@unique([hash, nonce, from, chainId], name: "uid")
 }
 
+model UserInternalTx {
+  id        Int      @id @default(autoincrement())
+  timestamp DateTime
+  block     BigInt
+  success   Boolean  @default(false)
+  hash      String
+  type      String
+  value     String
+  from      String
+  to        String
+  fromName  String   @default("")
+  toName    String   @default("")
+  gasLimit  Int
+  chainId   Int
+
+  @@unique([hash, to, from, chainId], name: "uid")
+}
+
 model Program {
   id             Int     @id @default(autoincrement())
   programAddress String  @unique
