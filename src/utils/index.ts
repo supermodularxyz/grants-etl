@@ -1,6 +1,7 @@
 import axios from 'axios'
 import { chainConfig, clients } from './client'
 import { Row } from '../loaders/userTxHistory'
+import { InternalRow } from '../loaders/userInternalTxHistory'
 
 export const grantFetch = async (path: string) => {
   try {
@@ -78,24 +79,36 @@ export const handleDateString = (timestamp: any) => {
   return String(Number.isNaN(formattedDateString) ? new Date().valueOf() + 157680000 : formattedDateString)
 }
 
-export const loadExtraTxData = async ({
-  address,
-  next_page_params,
-}: {
-  address: string
-  next_page_params: { block_number: number; index: number; items_count: number }
-}): Promise<Row[]> => {
-  const extraParams = `block_number=${next_page_params['block_number']}&index=${next_page_params['index']}&items_count=${next_page_params['items_count']}`
+type NextPageParams = {
+  block_number: number
+  index: number
+  items_count: number
+  transaction_index?: number
+}
 
-  const res = (await fetch(
-    `https://explorer.publicgoods.network/api/v2/addresses/${address}/transactions?filter=to%20%7C%20from&${extraParams}`
-  ).then((r) => r.json())) as {
-    items: Row[]
-    next_page_params?: any
+type ExtraParamsArgs = {
+  url: string
+  next_page_params: NextPageParams
+}
+
+export const loadExtraTxData = async ({ url, next_page_params }: ExtraParamsArgs): Promise<(Row | InternalRow)[]> => {
+  const extraParams = Object.keys(next_page_params).reduce((acc: string, curr: string, i: number) => {
+    const value = next_page_params[curr as keyof NextPageParams]
+    if (value) {
+      const prefix = acc ? '&' : ''
+      return `${acc}${prefix}${curr}=${value}`
+    }
+
+    return acc
+  }, '')
+
+  const res = (await fetch(`${url}&${extraParams}`).then((r) => r.json())) as {
+    items: Row[] | InternalRow[]
+    next_page_params?: NextPageParams
   }
 
   return [
     ...res.items,
-    ...(res.next_page_params ? await loadExtraTxData({ address, next_page_params: res.next_page_params }) : []),
+    ...(res.next_page_params ? await loadExtraTxData({ url, next_page_params: res.next_page_params }) : []),
   ]
 }

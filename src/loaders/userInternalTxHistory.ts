@@ -6,13 +6,13 @@ type Props = {
   prisma: PrismaClient
 }
 
-export type Row = {
+export type InternalRow = {
   timestamp: Date
   block: number
-  status: string
-  method: string | null
-  hash: string
+  success: boolean
+  transaction_hash: string
   value: string
+  type: string
   to?: {
     name: string
     hash: string
@@ -21,28 +21,26 @@ export type Row = {
     name: string
     hash: string
   }
-  gas_used: number
-  nonce: number
+  gas_limit: number
   // token_transfers
 }
 
 type UserTxData = {
   timestamp: Date
   block: number
-  status: string
-  method: string | null
+  success: boolean
   hash: string
+  type: string
   value: string
-  toName: string
-  fromName: string
   to: string
+  toName: string
   from: string
-  gasUsed: number
-  nonce: number
+  fromName: string
+  gasLimit: number
   chainId: number
 }
 
-const managerUserTxHistory = async ({ prisma, chainId }: Props): Promise<any> => {
+const managerUserInternalTxHistory = async ({ prisma, chainId }: Props): Promise<any> => {
   // load all users count
   const userCount = await prisma.user.count()
 
@@ -91,13 +89,13 @@ const managerUserTxHistory = async ({ prisma, chainId }: Props): Promise<any> =>
       const rawTxs = (await Promise.all(
         users.map((user) =>
           fetch(
-            `https://explorer.publicgoods.network/api/v2/addresses/${user.voter}/transactions?filter=to%20%7C%20from`
+            `https://explorer.publicgoods.network/api/v2/addresses/${user.voter}/internal-transactions?filter=to%20%7C%20from`
           ).then(async (r) => ({ address: user.voter, response: await r.json() }))
         )
       )) as {
         address: string
         response: {
-          items: Row[]
+          items: InternalRow[]
           next_page_params?: any
         }
       }[]
@@ -107,13 +105,13 @@ const managerUserTxHistory = async ({ prisma, chainId }: Props): Promise<any> =>
       const data: UserTxData[] = []
 
       for (const row of rawTxs) {
-        let extraTxData: Row[] = []
+        let extraTxData: InternalRow[] = []
 
         if (row.response.next_page_params) {
           extraTxData = (await loadExtraTxData({
-            url: `https://explorer.publicgoods.network/api/v2/addresses/${row.address}/transactions?filter=to%20%7C%20from`,
+            url: `https://explorer.publicgoods.network/api/v2/addresses/${row.address}/internal-transactions?filter=to%20%7C%20from`,
             next_page_params: row.response.next_page_params,
-          })) as Row[]
+          })) as InternalRow[]
 
           console.log(`Loaded extraTxData`)
         }
@@ -131,18 +129,16 @@ const managerUserTxHistory = async ({ prisma, chainId }: Props): Promise<any> =>
             data.push({
               timestamp: item.timestamp ?? new Date(0).toISOString(),
               block: item.block ?? 0,
-              status: item.status ?? 'pending',
-              method: item.method,
-              hash: item.hash,
+              hash: item.transaction_hash,
               value: item.value,
               toName: item.to?.name ?? '',
               fromName: item.from?.name ?? '',
               to: item.to?.hash ?? '',
               from: item.from.hash,
-              gasUsed: item.gas_used ?? 0,
-              nonce: item.nonce,
+              gasLimit: Number(item.gas_limit) ?? 0,
               chainId: Number(chainId),
-              // token_transfers
+              success: item.success,
+              type: item.type,
             })
           }
         }
@@ -161,7 +157,7 @@ const managerUserTxHistory = async ({ prisma, chainId }: Props): Promise<any> =>
       console.log(`Data chunks done, writing chunks to database`)
 
       for (const chunk of chunks) {
-        await prisma.userTx.createMany({
+        await prisma.userInternalTx.createMany({
           data: chunk,
           skipDuplicates: true,
         })
@@ -173,10 +169,12 @@ const managerUserTxHistory = async ({ prisma, chainId }: Props): Promise<any> =>
       console.timeEnd('Index')
       console.timeLog('history')
     } catch (error) {
+      console.log(error)
+
       console.log(`Something failed, retrying in few seconds...`)
       await new Promise((res, rej) => setTimeout(res, 20000))
     }
   } while ((cursor as number) > 0)
 }
 
-export default managerUserTxHistory
+export default managerUserInternalTxHistory

@@ -6,6 +6,7 @@ import {
   manageRounds,
   manageTx,
   manageVotes,
+  managerUserInternalTxHistory,
   managerUserTxHistory,
 } from './loaders'
 import { initialFetch } from './utils'
@@ -41,8 +42,11 @@ export async function main({ chainId = '1', roundId }: { chainId: string; roundI
   // manage user tx
   // TODO : Start with PGN tx and move to other chains later
   if (Number(chainId) === 424) {
-    console.log(`Starting loading user tx history`)
+    console.log(`Start loading user tx history`)
     await managerUserTxHistory({ chainId, prisma })
+
+    console.log(`Start loading user internal tx history`)
+    await managerUserInternalTxHistory({ chainId, prisma })
   }
 
   // disconnect from database at the end
