@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client'
-import { getAddress, isAddress } from 'viem'
+import { getAddress } from 'viem'
 import sdk from 'api'
 
 const poapSdk = sdk('@poap/v1.0#lcw4v2g2llldijtcg')
@@ -121,6 +121,8 @@ const managePoaps = async ({ prisma, chainId }: Props) => {
     } catch (err) {
       console.log(err)
     }
+
+    console.log(`At db cursor: ${cursor}`)
 
     console.timeEnd('Index')
     console.timeLog('history')
