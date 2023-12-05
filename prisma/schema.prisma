@@ -15,6 +15,7 @@ model User {
   address  String    @unique
   votes    Vote[]
   passport Passport?
+  poaps    Poap[]
 }
 
 model Passport {
@@ -86,6 +87,28 @@ model UserInternalTx {
   chainId   Int
 
   @@unique([hash, to, from, chainId], name: "uid")
+}
+
+model Poap {
+  id          Int      @id @default(autoincrement())
+  poapId      Int
+  fancy_id    String
+  name        String
+  event_url   String
+  image_url   String
+  country     String
+  city        String
+  description String
+  year        Int
+  start_date  DateTime @db.Date
+  end_date    DateTime @db.Date
+  expiry_date DateTime @db.Date
+  supply      Int
+  tokenId     String
+  owner       String
+  chain       String
+  created     DateTime
+  poapOwner   User     @relation(fields: [owner], references: [address])
 }
 
 model Program {
