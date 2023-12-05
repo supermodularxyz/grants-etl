@@ -109,6 +109,8 @@ model Poap {
   chain       String
   created     DateTime
   poapOwner   User     @relation(fields: [owner], references: [address])
+
+  @@unique([fancy_id, owner, tokenId], name: "uid")
 }
 
 model Program {
