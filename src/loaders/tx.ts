@@ -20,14 +20,22 @@ const manageTx = async ({ chainId, prisma, roundId }: Props): Promise<any> => {
     return
   }
 
-  let votesFilter: { chainId: number; tx_timestamp: number; round: { roundId?: string; addedLastVotes: boolean } } = {
+  let votesFilter: { chainId: number; tx_timestamp: number; round: { roundId?: string } } = {
     chainId: Number(chainId),
     tx_timestamp: 0,
     round: {
       roundId,
-      addedLastVotes: false,
     },
   }
+
+  // let votesFilter: { chainId: number; tx_timestamp: number; round: { roundId?: string; addedLastVotes: boolean } } = {
+  //   chainId: Number(chainId),
+  //   tx_timestamp: 0,
+  //   round: {
+  //     roundId,
+  //     addedLastVotes: false,
+  //   },
+  // }
 
   const availableRounds: Set<number> = new Set([])
 
