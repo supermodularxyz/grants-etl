@@ -8,6 +8,7 @@ import {
   manageVotes,
   managerUserInternalTxHistory,
   managerUserTxHistory,
+  managePoaps,
 } from './loaders'
 import { initialFetch } from './utils'
 import { getAddress, isAddress } from 'viem'
@@ -57,6 +58,15 @@ export const indexPassports = async () => {
   console.log(`Starting Passports indexing`)
 
   await managePassports({ prisma })
+
+  // disconnect from database at the end
+  await prisma.$disconnect()
+}
+
+export const indexPoaps = async () => {
+  console.log(`Starting Poap indexing`)
+
+  await managePoaps({ prisma, chainId: 424 })
 
   // disconnect from database at the end
   await prisma.$disconnect()

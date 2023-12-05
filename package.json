@@ -13,7 +13,8 @@
     "job:250": "ts-node ./src/jobs/index.ts --chainId 250",
     "job:424": "ts-node ./src/jobs/index.ts --chainId 424",
     "job:42161": "ts-node ./src/jobs/index.ts --chainId 42161",
-    "job:passport": "ts-node ./src/jobs/index.ts --passport"
+    "job:passport": "ts-node ./src/jobs/index.ts --passport",
+    "job:poap": "ts-node ./src/jobs/index.ts --poap"
   },
   "devDependencies": {
     "@types/node": "^20.4.4",
@@ -27,6 +28,7 @@
     "@prisma/client": "^5.2.0",
     "@types/async": "^3.2.20",
     "@types/minimist": "^1.2.2",
+    "api": "^6.1.1",
     "async": "^3.2.4",
     "axios": "^1.4.0",
     "chainsauce": "^1.0.19",
