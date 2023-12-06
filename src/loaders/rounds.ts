@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client'
 import { getAddress } from 'viem'
-import { grantFetch, handleDateString } from '../utils'
+import { fetchBlockTimestamp, grantFetch, handleDateString } from '../utils'
 
 type Props = {
   chainId: string
@@ -21,38 +21,49 @@ const manageRounds = async ({ chainId, prisma, roundId }: Props) => {
     }
   }
 
-  const data = roundsData.reduce(
-    (acc, r) => {
-      const programContractAddress = getAddress(r.metadata?.programContractAddress)
+  const rounds = []
+  const programs: Set<`0x${string}`> = new Set([])
 
-      acc.rounds.push({
-        ...r,
-        id: undefined,
-        applicationsStartTime: handleDateString(r.applicationsStartTime),
-        applicationsEndTime: handleDateString(r.applicationsEndTime),
-        roundStartTime: handleDateString(r.roundStartTime),
-        roundEndTime: handleDateString(r.roundEndTime),
-        chainId: Number(chainId),
-        roundId: r.id,
-        programContractAddress,
-      })
+  for (let i = 0; i < roundsData.length; i++) {
+    const r = roundsData[i]
 
-      if (programContractAddress) {
-        acc.programs.add(programContractAddress)
-      }
+    const programContractAddress = getAddress(r.metadata?.programContractAddress)
 
-      return acc
-    },
-    { rounds: [], programs: new Set([]) }
-  )
+    const [createdAt, updatedAt] = await fetchBlockTimestamp({
+      chainId: Number(chainId),
+      blockNumbers: [r.createdAtBlock, r.updatedAtBlock],
+    })
 
-  const programsList = Array.from(data.programs).map((p) => ({ programAddress: p })) as { programAddress: string }[]
+    rounds.push({
+      ...r,
+      id: undefined,
+      applicationsStartTime: handleDateString(r.applicationsStartTime),
+      applicationsEndTime: handleDateString(r.applicationsEndTime),
+      roundStartTime: handleDateString(r.roundStartTime),
+      roundEndTime: handleDateString(r.roundEndTime),
+      chainId: Number(chainId),
+      roundId: r.id,
+      programContractAddress,
+      createdAt,
+      updatedAt,
+    })
 
-  const roundsTotal = data.rounds.length
+    if (programContractAddress) {
+      programs.add(programContractAddress)
+    }
+  }
+
+  roundsData.reduce((acc, r) => {
+    return acc
+  })
+
+  const programsList = Array.from(programs).map((p) => ({ programAddress: p })) as { programAddress: string }[]
+
+  const roundsTotal = rounds.length
   const programsTotal = programsList.length
 
   console.log(
-    `${data.rounds.length} round${roundsTotal !== 1 ? 's' : ''} found across ${programsTotal} program${
+    `${rounds.length} round${roundsTotal !== 1 ? 's' : ''} found across ${programsTotal} program${
       programsTotal !== 1 ? 's' : ''
     }`
   )
@@ -63,7 +74,7 @@ const manageRounds = async ({ chainId, prisma, roundId }: Props) => {
   })
 
   // TODO : Optimize this to skip rounds that are already ended & addedLastVotes = true
-  for (const round of data.rounds) {
+  for (const round of rounds) {
     await prisma.round.upsert({
       where: {
         uid: {

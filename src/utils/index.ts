@@ -128,3 +128,13 @@ export const loadExtraTxData = async ({ url, next_page_params }: ExtraParamsArgs
     return []
   }
 }
+
+export const fetchBlockTimestamp = async ({ chainId, blockNumbers }: { chainId: number; blockNumbers: number[] }) => {
+  return await Promise.all(
+    blockNumbers.map((blockNumber) =>
+      clients[Number(chainId) as keyof typeof clients]
+        .getBlock({ blockNumber: BigInt(blockNumber) })
+        .then((block) => block.timestamp)
+    )
+  )
+}
