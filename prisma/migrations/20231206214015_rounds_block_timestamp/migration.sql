@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Round" ADD COLUMN     "createdAt" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "updatedAt" INTEGER NOT NULL DEFAULT 0;

@@ -135,8 +135,8 @@ model Round {
   applicationsEndTime    BigInt
   roundStartTime         BigInt
   roundEndTime           BigInt
-  createdAt              Int                    @default(0)
-  updatedAt              Int                    @default(0)
+  createdAt              BigInt                 @default(0)
+  updatedAt              BigInt                 @default(0)
   createdAtBlock         Int
   updatedAtBlock         Int
   // user generated fields
