@@ -35,7 +35,6 @@ type Poap = {
 
 const managePoaps = async ({ prisma, chainId }: Props) => {
   // get all users in specified chainId
-
   console.log(`Indexing user Poaps`)
   console.time('history')
 
@@ -46,9 +45,9 @@ const managePoaps = async ({ prisma, chainId }: Props) => {
       console.time('Index')
 
       const users: { id: number; voter: string }[] = await prisma.vote.findMany({
-        where: {
-          chainId: Number(chainId),
-        },
+        // where: {
+        //   chainId: Number(chainId),
+        // },
         select: {
           id: true,
           voter: true,

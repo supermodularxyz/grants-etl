@@ -42,5 +42,11 @@ module.exports = {
       time: true,
       args: 'run job:passport',
     },
+    {
+      name: 'job:poap',
+      script: 'yarn',
+      time: true,
+      args: 'run job:poap',
+    },
   ],
 }
