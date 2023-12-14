@@ -16,6 +16,33 @@ model User {
   votes    Vote[]
   passport Passport?
   poaps    Poap[]
+  Arkham   Arkham[]
+}
+
+model Arkham {
+  id                Int     @id @default(autoincrement())
+  address           String
+  chain             String
+  entity_name       String?
+  entity_note       String?
+  entity_id         String?
+  entity_type       String?
+  entity_service    String?
+  entity_addresses  Json?
+  entity_website    String?
+  entity_twitter    String?
+  entity_crunchbase String?
+  entity_linkedin   String?
+
+  label_name      String?
+  label_address   String?
+  label_chainType String?
+  contract        Boolean
+  isUserAddress   Boolean
+
+  user User @relation(fields: [address], references: [address])
+
+  @@unique([address, chain], name: "uid")
 }
 
 model Passport {
