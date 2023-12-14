@@ -1,3 +1,4 @@
+import { getAddress, isAddress } from 'viem'
 import { loadExtraTxData } from '../utils'
 import { PrismaClient } from '@prisma/client'
 
@@ -127,6 +128,19 @@ const managerUserTxHistory = async ({ prisma, chainId }: Props): Promise<any> =>
         if (txData) {
           for (let i = 0; i < txData.length; i++) {
             const item = txData[i]
+
+            const newAddress = (row.address === item.to?.hash ? item.from.hash : item.to?.hash) ?? ''
+            if (isAddress(newAddress)) {
+              await prisma.user.upsert({
+                where: {
+                  address: getAddress(newAddress),
+                },
+                create: {
+                  address: getAddress(newAddress),
+                },
+                update: {},
+              })
+            }
 
             data.push({
               timestamp: item.timestamp ?? new Date(0).toISOString(),

@@ -9,6 +9,7 @@ import {
   managerUserInternalTxHistory,
   managerUserTxHistory,
   managePoaps,
+  manageArkham,
 } from './loaders'
 import { initialFetch } from './utils'
 import { getAddress, isAddress } from 'viem'
@@ -67,6 +68,15 @@ export const indexPoaps = async () => {
   console.log(`Starting Poap indexing`)
 
   await managePoaps({ prisma, chainId: 424 })
+
+  // disconnect from database at the end
+  await prisma.$disconnect()
+}
+
+export const indexArkham = async () => {
+  console.log(`Starting Arkham indexing`)
+
+  await manageArkham({ prisma })
 
   // disconnect from database at the end
   await prisma.$disconnect()
