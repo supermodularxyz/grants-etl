@@ -213,6 +213,7 @@ model Project {
 
 model Vote {
   id               Int     @id @default(autoincrement())
+  voteId           String?
   transaction      String
   blockNumber      Int
   projectId        Int

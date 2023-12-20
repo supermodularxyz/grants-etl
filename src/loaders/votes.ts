@@ -77,6 +77,7 @@ const manageVotes = async ({ chainId, prisma, roundId }: Props) => {
           create: {
             ...vote,
             id: undefined,
+            voteId: vote.id,
             projectId: project.id,
             roundId: round.id,
             chainId: Number(chainId),
