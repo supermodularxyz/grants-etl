@@ -175,6 +175,7 @@ model Round {
   program                Program?               @relation(fields: [programContractAddress], references: [programAddress])
   projects               ApplicationsInRounds[]
   Vote                   Vote[]
+  MatchingDistribution   MatchingDistribution[]
 
   @@unique([chainId, roundId], name: "uid")
 }
@@ -234,4 +235,24 @@ model Vote {
   tx_timestamp     BigInt  @default(0)
 
   @@unique([transaction, roundId, projectId], name: "uid")
+}
+
+model MatchingDistribution {
+  id                            Int    @id @default(autoincrement())
+  contributionsCount            Int
+  projectPayoutAddress          String
+  applicationId                 Int
+  projectId                     String
+  matchPoolPercentage           Float
+  projectName                   String
+  matchAmountInTokenHex         String
+  matchAmountInToken            String
+  originalMatchAmountInTokenHex String
+  originalMatchAmountInToken    String
+  index                         Int
+  chainId                       Int
+  roundKey                      Int
+  round                         Round  @relation(fields: [roundKey], references: [id])
+
+  @@unique([projectName, projectId, applicationId, matchPoolPercentage, contributionsCount], name: "uid")
 }
