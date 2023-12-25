@@ -10,6 +10,7 @@ import {
   managerUserTxHistory,
   managePoaps,
   manageArkham,
+  manageRoundDistribution,
 } from './loaders'
 import { initialFetch } from './utils'
 import { getAddress, isAddress } from 'viem'
@@ -25,6 +26,10 @@ export async function main({ chainId = '1', roundId }: { chainId: string; roundI
 
   // manage the programs & rounds first
   await manageRounds({ chainId, prisma, roundId })
+
+  console.log(`Starting round Distribution results indexing`)
+
+  await manageRoundDistribution({ chainId, prisma })
 
   console.log(`Starting round applications indexing`)
 
