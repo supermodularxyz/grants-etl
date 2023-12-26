@@ -101,6 +101,7 @@ const manageRoundDistribution = async ({ chainId, prisma }: Props) => {
   for (const chunk of chunks) {
     await prisma.matchingDistribution.createMany({
       data: chunk,
+      skipDuplicates: true,
     })
   }
 }
