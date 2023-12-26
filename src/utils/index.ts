@@ -143,28 +143,32 @@ export const fetchBlockTimestamp = async ({ chainId, blockNumbers }: { chainId: 
 }
 
 export const fetchRoundDistributionData = async ({ chainId, roundId }: { chainId: number; roundId: `0x${string}` }) => {
-  const client = clients[Number(chainId) as keyof typeof clients]
+  try {
+    const client = clients[Number(chainId) as keyof typeof clients]
 
-  const payoutContract = getAddress(
-    await client.readContract({
-      address: roundId,
-      abi: roundABI,
-      functionName: 'payoutStrategy',
+    const payoutContract = getAddress(
+      await client.readContract({
+        address: roundId,
+        abi: roundABI,
+        functionName: 'payoutStrategy',
+      })
+    ) as `0x${string}`
+
+    const [_, metaPtr] = await client.readContract({
+      address: payoutContract,
+      abi: payoutABI,
+      functionName: 'distributionMetaPtr',
     })
-  ) as `0x${string}`
 
-  const [_, metaPtr] = await client.readContract({
-    address: payoutContract,
-    abi: payoutABI,
-    functionName: 'distributionMetaPtr',
-  })
+    if (metaPtr && metaPtr.length > 0) {
+      const res = await fetch(`https://ipfs.io/ipfs/${metaPtr}`)
 
-  if (metaPtr && metaPtr.length > 0) {
-    const res = await fetch(`https://ipfs.io/ipfs/${metaPtr}`)
+      const distro = await res.json()
 
-    const distro = await res.json()
-
-    return distro?.matchingDistribution || null
+      return distro?.matchingDistribution || null
+    }
+  } catch (error) {
+    console.log(`Error occurred while fetching round distro data for ${roundId}`)
   }
 
   return null
