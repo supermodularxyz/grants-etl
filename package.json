@@ -39,11 +39,12 @@
     "dotenv": "^16.3.1",
     "ethers": "5.7.2",
     "minimist": "^1.2.8",
+    "moralis": "^2.23.2",
     "node-jsonl": "^0.1.0",
     "node-schedule": "^2.1.1",
     "ora": "^7.0.1",
     "queue": "^7.0.0",
     "toad-scheduler": "^3.0.0",
-    "viem": "^1.4.1"
+    "viem": "^2.0.6"
   }
 }

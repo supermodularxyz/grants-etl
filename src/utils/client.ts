@@ -51,6 +51,12 @@ const createClient = (chainId: keyof typeof chainConfig) =>
     transport: http(chainConfig[chainId].rpc),
   })
 
+export const explorers: Record<number, string> = {
+  1: 'https://eth.blockscout.com',
+  10: 'https://optimism.blockscout.com',
+  424: 'https://explorer.publicgoods.network',
+}
+
 export const clients = {
   1: createClient(1),
   10: createClient(10),

@@ -1,6 +1,7 @@
 import { getAddress, isAddress } from 'viem'
 import { loadExtraTxData } from '../utils'
 import { PrismaClient } from '@prisma/client'
+import { explorers } from '../utils/client'
 
 type Props = {
   chainId: string
@@ -42,56 +43,60 @@ type UserTxData = {
 }
 
 const managerUserInternalTxHistory = async ({ prisma, chainId }: Props): Promise<any> => {
-  // load all users count
-  const userCount = await prisma.user.count()
+  const explorerForChain = explorers[Number(chainId)]
 
-  console.log(`Indexing ${userCount} users`)
+  if (!explorerForChain || explorerForChain.length === 0) {
+    console.log(`No explorer found for ${chainId}`)
+    return
+  }
+
+  // load all users count
+  const voters = await prisma.vote.findMany({
+    distinct: ['voter'],
+    where: {
+      chainId: Number(chainId),
+    },
+    select: {
+      id: true,
+      voter: true,
+    },
+  })
+
+  const votersCount = voters.length
+
+  console.log(`Indexing ${votersCount} voters`)
   console.time('history')
 
-  if (userCount === 0) {
+  if (votersCount === 0) {
     console.log(`No users found`)
     return
   }
 
-  let cursor
+  // split voters list into chunks
+  const votersGroup = []
+
+  for (let i = 0; i < voters.length; i += 20) {
+    const chunk = voters.slice(i, i + 20)
+    votersGroup.push(chunk)
+  }
+
+  let cursor = 0
 
   do {
     try {
       console.time('Index')
-      // pick off users based on id and increment till end of list
-      // const users: { id: number; address: string }[] = await prisma.user.findMany({
-      //   take: 1,
-      //   orderBy: {
-      //     id: 'asc',
-      //   },
-      //   ...(cursor && { skip: 1, cursor: { id: cursor } }),
-      // })
 
-      const users: { id: number; voter: string }[] = await prisma.vote.findMany({
-        where: {
-          chainId: Number(chainId),
-        },
-        select: {
-          id: true,
-          voter: true,
-        },
-        distinct: ['voter'],
-        take: 20,
-        orderBy: {
-          id: 'asc',
-        },
-        ...(cursor && { skip: 1, cursor: { id: cursor } }),
-      })
+      const users: { id: number; voter: string }[] = votersGroup[cursor]
 
-      if (users.length === 0) {
+      if (!users || users.length === 0) {
         break
       }
 
       const rawTxs = (await Promise.all(
         users.map((user) =>
-          fetch(
-            `https://explorer.publicgoods.network/api/v2/addresses/${user.voter}/internal-transactions?filter=to%20%7C%20from`
-          ).then(async (r) => ({ address: user.voter, response: await r.json() }))
+          fetch(`${explorerForChain}/api/v2/addresses/${user.voter}/internal-transactions?filter=to%20%7C%20from`).then(
+            async (r) => ({ address: user.voter, response: await r.json() })
+          )
         )
       )) as {
         address: string
@@ -108,17 +113,35 @@ const managerUserInternalTxHistory = async ({ prisma, chainId }: Props): Promise
       for (const row of rawTxs) {
         let extraTxData: InternalRow[] = []
 
-        if (row.response.next_page_params) {
-          extraTxData = (await loadExtraTxData({
-            url: `https://explorer.publicgoods.network/api/v2/addresses/${row.address}/internal-transactions?filter=to%20%7C%20from`,
-            next_page_params: row.response.next_page_params,
-          })) as InternalRow[]
+        const rowBlocks = new Set(row.response.items.map((i) => i.block))
 
-          console.log(`Loaded extraTxData`)
-        }
+        // Make sure new data is coming from current user request by checking against last updated tx record
+        const userLatestTx = await prisma.userInternalTx.findFirst({
+          where: {
+            AND: [{ from: row.address }, { to: row.address }],
+          },
+          orderBy: {
+            block: 'desc',
+          },
+        })
 
         if (!row.response.items) {
           console.log(`Empty Reponse Items for ${row.address}`)
+        }
+
+        const lastBlock = Number(userLatestTx?.block) ?? 0
+
+        if (!userLatestTx?.block || !rowBlocks.has(lastBlock)) {
+          console.log(`${row.address} has newer tx records, requesting more data`)
+          if (row.response.next_page_params) {
+            extraTxData = (await loadExtraTxData({
+              url: `${explorerForChain}/api/v2/addresses/${row.address}/internal-transactions?filter=to%20%7C%20from`,
+              next_page_params: row.response.next_page_params,
+              lastBlock,
+            })) as InternalRow[]
+
+            console.log(`Loaded extraTxData`)
+          }
         }
 
         const txData = [...extraTxData, ...row.response.items]

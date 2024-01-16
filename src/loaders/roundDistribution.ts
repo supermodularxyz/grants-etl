@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client'
 import { fromHex } from 'viem'
-import { fetchRoundDistributionData, grantFetch } from '../utils'
+import { Price, fetchRoundDistributionData, formatDistributionPrice, grantFetch } from '../utils'
 
 type Props = {
   chainId: string
@@ -53,23 +53,26 @@ const manageRoundDistribution = async ({ chainId, prisma }: Props) => {
     },
   })
 
+  const priceList: Price[] = await grantFetch(`${chainId}/prices.json`)
+
   // get all rounds' projects
   const allDistributionResults = (
     await Promise.all(
       rounds.map(async (r) => ({
         round: r.id,
-        results: (await fetchRoundDistributionData({
+        ...((await fetchRoundDistributionData({
           chainId: Number(chainId),
           roundId: r.roundId as `0x${string}`,
-        })) as Distro[],
+          priceList,
+        })) as { results: Distro[]; token: { price: number; decimal: number; code: string } }),
       }))
     )
-  ).filter((i) => i.results !== null)
+  ).filter((i) => i.results !== null && i.results !== undefined)
 
   let rows: Rows[] = []
 
   for (let i = 0; i < allDistributionResults.length; i++) {
-    const { round, results } = allDistributionResults[i]
+    const { round, results, token } = allDistributionResults[i]
 
     const distros = results.map((distro) => ({
       contributionsCount: Number(distro.contributionsCount || 0),
@@ -82,6 +85,22 @@ const manageRoundDistribution = async ({ chainId, prisma }: Props) => {
       matchAmountInToken: fromHex(distro.matchAmountInToken.hex, 'bigint').toString(),
       originalMatchAmountInTokenHex: distro.originalMatchAmountInToken.hex,
       originalMatchAmountInToken: fromHex(distro.originalMatchAmountInToken.hex, 'bigint').toString(),
+      matchAmountUSD:
+        token.price > 0
+          ? formatDistributionPrice({
+              amount: distro.matchAmountInToken.hex,
+              price: token.price,
+              decimal: token.decimal,
+            })
+          : undefined,
+      originalMatchAmountUSD:
+        token.price > 0
+          ? formatDistributionPrice({
+              amount: distro.originalMatchAmountInToken.hex,
+              price: token.price,
+              decimal: token.decimal,
+            })
+          : undefined,
       index: distro.index,
       chainId: Number(chainId),
       roundKey: round,
