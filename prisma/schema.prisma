@@ -249,6 +249,8 @@ model MatchingDistribution {
   matchAmountInToken            String
   originalMatchAmountInTokenHex String
   originalMatchAmountInToken    String
+  matchAmountUSD                Float?
+  originalMatchAmountUSD        Float?
   index                         Int
   chainId                       Int
   roundKey                      Int
