@@ -256,5 +256,5 @@ export const formatDistributionPrice = ({
   price: number
   decimal: number
 }) => {
-  return Number(formatUnits(hexToBigInt(amount) * parseUnits(price.toString(), decimal), decimal * 2))
+  return Number(formatUnits(hexToBigInt(amount) * parseUnits(price.toString(), decimal), decimal + 18))
 }
