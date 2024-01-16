@@ -109,18 +109,19 @@ const manageRoundDistribution = async ({ chainId, prisma }: Props) => {
     rows = [...rows, ...distros]
   }
 
-  const chunkSize = 300
-  const chunks = []
-
-  for (let i = 0; i < rows.length; i += chunkSize) {
-    const chunk = rows.slice(i, i + chunkSize)
-    chunks.push(chunk)
-  }
-
-  for (const chunk of chunks) {
-    await prisma.matchingDistribution.createMany({
-      data: chunk,
-      skipDuplicates: true,
+  for (const row of rows) {
+    await prisma.matchingDistribution.upsert({
+      where: {
+        uid: {
+          projectName: row.projectName,
+          projectId: row.projectId,
+          applicationId: row.applicationId,
+          matchPoolPercentage: row.matchPoolPercentage,
+          contributionsCount: row.contributionsCount,
+        },
+      },
+      update: row,
+      create: row,
     })
   }
 }
