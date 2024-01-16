@@ -1,10 +1,12 @@
 import axios from 'axios'
+import { ethers } from 'ethers'
 import { chainConfig, clients } from './client'
 import { Row } from '../loaders/userTxHistory'
 import { InternalRow } from '../loaders/userInternalTxHistory'
 import { roundABI } from '../abi/round'
 import { payoutABI } from '../abi/payout'
-import { getAddress } from 'viem'
+import { erc20Abi, formatUnits, getAddress, hexToBigInt, parseUnits } from 'viem'
+import { getLatestLogs } from './moralis'
 
 export const grantFetch = async (path: string) => {
   try {
@@ -92,9 +94,14 @@ type NextPageParams = {
 type ExtraParamsArgs = {
   url: string
   next_page_params: NextPageParams
+  lastBlock: number
 }
 
-export const loadExtraTxData = async ({ url, next_page_params }: ExtraParamsArgs): Promise<(Row | InternalRow)[]> => {
+export const loadExtraTxData = async ({
+  url,
+  next_page_params,
+  lastBlock = 0,
+}: ExtraParamsArgs): Promise<(Row | InternalRow)[]> => {
   const extraParams = Object.keys(next_page_params).reduce((acc: string, curr: string, i: number) => {
     const value = next_page_params[curr as keyof NextPageParams]
     const prefix = acc ? '&' : ''
@@ -123,9 +130,14 @@ export const loadExtraTxData = async ({ url, next_page_params }: ExtraParamsArgs
   } while (!success)
 
   if (res) {
+    const rowBlocks = new Set(res.items.map((i) => i.block))
+    const canLoadMore = !rowBlocks.has(lastBlock)
+
     return [
       ...res.items,
-      ...(res.next_page_params ? await loadExtraTxData({ url, next_page_params: res.next_page_params }) : []),
+      ...(canLoadMore && res.next_page_params
+        ? await loadExtraTxData({ url, next_page_params: res.next_page_params, lastBlock })
+        : []),
     ]
   } else {
     return []
@@ -142,7 +154,23 @@ export const fetchBlockTimestamp = async ({ chainId, blockNumbers }: { chainId: 
   )
 }
 
-export const fetchRoundDistributionData = async ({ chainId, roundId }: { chainId: number; roundId: `0x${string}` }) => {
+export type Price = {
+  token: `0x${string}`
+  code: string
+  price: number
+  timestamp: number
+  block: number
+}
+
+export const fetchRoundDistributionData = async ({
+  chainId,
+  roundId,
+  priceList,
+}: {
+  chainId: number
+  roundId: `0x${string}`
+  priceList: Price[]
+}) => {
   try {
     const client = clients[Number(chainId) as keyof typeof clients]
 
@@ -154,22 +182,79 @@ export const fetchRoundDistributionData = async ({ chainId, roundId }: { chainId
       })
     ) as `0x${string}`
 
-    const [_, metaPtr] = await client.readContract({
+    const contractConfig = {
       address: payoutContract,
       abi: payoutABI,
-      functionName: 'distributionMetaPtr',
+    }
+
+    const [{ result: metaData }, { result: tokenAddress }] = await client.multicall({
+      contracts: [
+        {
+          ...contractConfig,
+          functionName: 'distributionMetaPtr',
+        },
+        {
+          ...contractConfig,
+          functionName: 'tokenAddress',
+        },
+      ],
     })
 
-    if (metaPtr && metaPtr.length > 0) {
-      const res = await fetch(`https://ipfs.io/ipfs/${metaPtr}`)
+    if (metaData) {
+      const [_, metaPtr] = metaData
 
-      const distro = await res.json()
+      if (metaPtr && metaPtr.length > 0) {
+        const logs = await getLatestLogs({ chainId, address: payoutContract })
 
-      return distro?.matchingDistribution || null
+        let token = { price: 0, decimal: 18, code: 'ETH' }
+
+        if (logs.length > 0 && tokenAddress) {
+          const targetBlockNumber = Number(logs[0]?.block_number)
+          const nTokenAddress = tokenAddress.toLowerCase()
+
+          token.decimal =
+            nTokenAddress === ethers.constants.AddressZero
+              ? 18
+              : await client.readContract({
+                  address: nTokenAddress as `0x${string}`,
+                  abi: erc20Abi,
+                  functionName: 'decimals',
+                })
+
+          const tokenPrices = priceList.filter((i) => i.token === nTokenAddress).sort((a, b) => b.block - a.block)
+          const targetTokenPrice = tokenPrices.find((i) => i.token === nTokenAddress && i.block <= targetBlockNumber)
+
+          token.price = targetTokenPrice?.price ?? 0
+          token.code = targetTokenPrice?.code ?? 'ETH'
+        }
+
+        const res = await fetch(`https://ipfs.io/ipfs/${metaPtr}`)
+
+        const distro = await res.json()
+
+        return {
+          token,
+          results: distro?.matchingDistribution || null,
+        }
+      }
     }
   } catch (error) {
+    console.log(error)
+
     console.log(`Error occurred while fetching round distro data for ${roundId}`)
   }
 
   return null
+}
+
+export const formatDistributionPrice = ({
+  amount,
+  price,
+  decimal,
+}: {
+  amount: `0x${string}`
+  price: number
+  decimal: number
+}) => {
+  return Number(formatUnits(hexToBigInt(amount) * parseUnits(price.toString(), decimal), decimal * 2))
 }
