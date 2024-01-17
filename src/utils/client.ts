@@ -41,6 +41,12 @@ export const chainConfig = {
         etherscan: { name: 'PGN Explorer', url: 'https://explorer.publicgoods.network' },
         default: { name: 'PGN Explorer', url: 'https://explorer.publicgoods.network' },
       },
+      contracts: {
+        multicall3: {
+          address: '0xcA11bde05977b3631167028862bE2a173976CA11',
+          blockCreated: 3380209,
+        },
+      },
     },
   },
 }
