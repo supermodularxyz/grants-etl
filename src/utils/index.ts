@@ -169,20 +169,29 @@ export type Price = {
 
 export const getPGNPayoutBlock = async ({ payoutContract }: { payoutContract: `0x${string}` }) => {
   try {
-    let params
+    let params: NextPageParams | undefined
     let items: any[] = []
 
     do {
-      const res = await fetch(
-        `https://explorer.publicgoods.network/api/v2/addresses/${payoutContract}/logs&${
-          params.block_number ? createExtraParams(params) : ''
-        }`
-      )
-      const data = await res.json()
+      try {
+        const res = await fetch(
+          `https://explorer.publicgoods.network/api/v2/addresses/${payoutContract}/logs&${
+            params?.block_number ? createExtraParams(params) : ''
+          }`
+        )
+        const data = await res.json()
 
-      params = data.next_page_params
-      items = [...items, ...data.items]
-    } while (params.block_number)
+        params = data.next_page_params
+        items = [...items, ...data.items]
+      } catch (error) {
+        await new Promise((res) =>
+          setTimeout(() => {
+            res(true)
+          }, 3000)
+        )
+        console.log(`Failed with params, trying again`)
+      }
+    } while (params?.block_number)
 
     return items
       .sort((a, b) => b.block_number - a.block_number)
