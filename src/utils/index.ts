@@ -98,16 +98,20 @@ type ExtraParamsArgs = {
   lastBlock: number
 }
 
+export const createExtraParams = (next_page_params: NextPageParams) => {
+  return Object.keys(next_page_params).reduce((acc: string, curr: string, i: number) => {
+    const value = next_page_params[curr as keyof NextPageParams]
+    const prefix = acc ? '&' : ''
+    return `${acc}${prefix}${curr}=${value}`
+  }, '')
+}
+
 export const loadExtraTxData = async ({
   url,
   next_page_params,
   lastBlock = 0,
 }: ExtraParamsArgs): Promise<(Row | InternalRow)[]> => {
-  const extraParams = Object.keys(next_page_params).reduce((acc: string, curr: string, i: number) => {
-    const value = next_page_params[curr as keyof NextPageParams]
-    const prefix = acc ? '&' : ''
-    return `${acc}${prefix}${curr}=${value}`
-  }, '')
+  const extraParams = createExtraParams(next_page_params)
 
   let success = false
   let res = undefined
@@ -165,9 +169,22 @@ export type Price = {
 
 export const getPGNPayoutBlock = async ({ payoutContract }: { payoutContract: `0x${string}` }) => {
   try {
-    const res = await fetch(`https://explorer.publicgoods.network/api/v2/addresses/${payoutContract}/logs`)
+    let params
+    let items: any[] = []
 
-    return ((await res.json()).items as any[])
+    do {
+      const res = await fetch(
+        `https://explorer.publicgoods.network/api/v2/addresses/${payoutContract}/logs&${
+          params.block_number ? createExtraParams(params) : ''
+        }`
+      )
+      const data = await res.json()
+
+      params = data.next_page_params
+      items = [...items, ...data.items]
+    } while (params.block_number)
+
+    return items
       .sort((a, b) => b.block_number - a.block_number)
       .find((i) => i.topics[0] === '0xdc7180ca4affc84269428ed20ef950e745126f11691b010c4a7d49458421008f')
   } catch (error) {
