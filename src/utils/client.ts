@@ -1,5 +1,5 @@
 import { createPublicClient, http } from 'viem'
-import { fantom, mainnet, optimism, arbitrum, polygon } from 'viem/chains'
+import { fantom, mainnet, optimism, arbitrum, polygon, pgn } from 'viem/chains'
 
 export const chainConfig = {
   1: {
@@ -24,30 +24,7 @@ export const chainConfig = {
   },
   424: {
     rpc: process.env.PGN_RPC,
-    chain: {
-      id: 424,
-      name: 'Public Goods Network',
-      network: 'PGN',
-      nativeCurrency: {
-        decimals: 18,
-        name: 'Ethereum',
-        symbol: 'ETH',
-      },
-      rpcUrls: {
-        public: { http: ['https://rpc.publicgoods.network'] },
-        default: { http: ['https://rpc.publicgoods.network'] },
-      },
-      blockExplorers: {
-        etherscan: { name: 'PGN Explorer', url: 'https://explorer.publicgoods.network' },
-        default: { name: 'PGN Explorer', url: 'https://explorer.publicgoods.network' },
-      },
-      contracts: {
-        multicall3: {
-          address: '0xcA11bde05977b3631167028862bE2a173976CA11',
-          blockCreated: 3380209,
-        },
-      },
-    },
+    chain: pgn,
   },
 }
 
