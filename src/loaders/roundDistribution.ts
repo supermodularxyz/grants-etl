@@ -39,6 +39,7 @@ type Rows = {
   index: number
   chainId: number
   roundKey: number
+  roundId: string
 }
 
 const manageRoundDistribution = async ({ chainId, prisma }: Props) => {
@@ -60,6 +61,7 @@ const manageRoundDistribution = async ({ chainId, prisma }: Props) => {
     await Promise.all(
       rounds.map(async (r) => ({
         round: r.id,
+        roundId: r.roundId,
         ...((await fetchRoundDistributionData({
           chainId: Number(chainId),
           roundId: r.roundId as `0x${string}`,
@@ -72,7 +74,7 @@ const manageRoundDistribution = async ({ chainId, prisma }: Props) => {
   let rows: Rows[] = []
 
   for (let i = 0; i < allDistributionResults.length; i++) {
-    const { round, results, token } = allDistributionResults[i]
+    const { round, roundId, results, token } = allDistributionResults[i]
 
     const distros = results.map((distro) => ({
       contributionsCount: Number(distro.contributionsCount || 0),
@@ -104,6 +106,7 @@ const manageRoundDistribution = async ({ chainId, prisma }: Props) => {
       index: distro.index,
       chainId: Number(chainId),
       roundKey: round,
+      roundId,
     }))
 
     rows = [...rows, ...distros]

@@ -238,7 +238,7 @@ model Vote {
 }
 
 model MatchingDistribution {
-  id                            Int    @id @default(autoincrement())
+  id                            Int     @id @default(autoincrement())
   contributionsCount            Int
   projectPayoutAddress          String
   applicationId                 Int
@@ -254,7 +254,8 @@ model MatchingDistribution {
   index                         Int
   chainId                       Int
   roundKey                      Int
-  round                         Round  @relation(fields: [roundKey], references: [id])
+  roundId                       String?
+  round                         Round   @relation(fields: [roundKey], references: [id])
 
   @@unique([projectName, projectId, applicationId, matchPoolPercentage, contributionsCount], name: "uid")
 }
