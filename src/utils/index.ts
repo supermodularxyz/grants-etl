@@ -175,8 +175,8 @@ export const getPGNPayoutBlock = async ({ payoutContract }: { payoutContract: `0
     do {
       try {
         const res = await fetch(
-          `https://explorer.publicgoods.network/api/v2/addresses/${payoutContract}/logs&${
-            params?.block_number ? createExtraParams(params) : ''
+          `https://explorer.publicgoods.network/api/v2/addresses/${payoutContract}/logs${
+            params?.block_number ? '?' + createExtraParams(params) : ''
           }`
         )
         const data = await res.json()
@@ -187,7 +187,7 @@ export const getPGNPayoutBlock = async ({ payoutContract }: { payoutContract: `0
         await new Promise((res) =>
           setTimeout(() => {
             res(true)
-          }, 3000)
+          }, 20000)
         )
         console.log(`Failed with params, trying again`)
       }
