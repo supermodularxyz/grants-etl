@@ -7,6 +7,7 @@ import { roundABI } from '../abi/round'
 import { payoutABI } from '../abi/payout'
 import { erc20Abi, formatUnits, getAddress, hexToBigInt, parseUnits } from 'viem'
 import { getLatestLogs } from './moralis'
+import { pgn } from 'viem/chains'
 
 export const grantFetch = async (path: string) => {
   try {
@@ -162,6 +163,18 @@ export type Price = {
   block: number
 }
 
+export const getPGNPayoutBlock = async ({ payoutContract }: { payoutContract: `0x${string}` }) => {
+  try {
+    const res = await fetch(`https://explorer.publicgoods.network/api/v2/addresses/${payoutContract}/logs`)
+
+    return ((await res.json()).items as any[])
+      .sort((a, b) => b.block_number - a.block_number)
+      .find((i) => i.topics[0] === '0xdc7180ca4affc84269428ed20ef950e745126f11691b010c4a7d49458421008f')
+  } catch (error) {
+    return undefined
+  }
+}
+
 export const fetchRoundDistributionData = async ({
   chainId,
   roundId,
@@ -204,12 +217,15 @@ export const fetchRoundDistributionData = async ({
       const [_, metaPtr] = metaData
 
       if (metaPtr && metaPtr.length > 0) {
-        const logs = await getLatestLogs({ chainId, address: payoutContract })
+        const logs =
+          chainId === pgn.id
+            ? await getPGNPayoutBlock({ payoutContract })
+            : (await getLatestLogs({ chainId, address: payoutContract }))[0]
 
         let token = { price: 0, decimal: 18, code: 'ETH' }
 
-        if (logs.length > 0 && tokenAddress) {
-          const targetBlockNumber = Number(logs[0]?.block_number)
+        if (logs && tokenAddress) {
+          const targetBlockNumber = Number(logs.block_number)
           const nTokenAddress = tokenAddress.toLowerCase()
 
           token.decimal =
