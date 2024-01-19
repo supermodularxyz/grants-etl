@@ -1,7 +1,7 @@
 // import { ToadScheduler, SimpleIntervalJob, AsyncTask } from 'toad-scheduler'
 import schedule from 'node-schedule'
 import minimist from 'minimist'
-import { main, disconnect, indexPassports, indexPoaps, indexArkham } from '../main'
+import { main, disconnect, indexPassports, indexPoaps, indexArkham, indexStakers } from '../main'
 
 const argv = minimist(process.argv.slice(2), { boolean: ['passport', 'paop', 'arkham'] })
 
@@ -9,7 +9,7 @@ const rule = new schedule.RecurrenceRule()
 rule.hour = 8
 rule.minute = 15
 
-const { chainId, passport, poap, arkham } = argv
+const { chainId, passport, poap, arkham, stakers } = argv
 
 // if (!chainId || chainId.length === 0) {
 //   console.log(`You have to specify a chainId for the cron jobs`)
@@ -73,6 +73,21 @@ if (arkham) {
     console.log(`Starting one-time job for PGN Poap data`)
     try {
       await indexArkham()
+    } catch (error) {
+      console.log(error)
+    }
+
+    await disconnect()
+  }
+
+  startIndexing()
+}
+
+if (stakers) {
+  const startIndexing = async () => {
+    console.log(`Starting one-time job for ETH stakers data`)
+    try {
+      await indexStakers()
     } catch (error) {
       console.log(error)
     }

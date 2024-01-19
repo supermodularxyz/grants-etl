@@ -12,6 +12,7 @@ import {
   manageArkham,
   manageRoundDistribution,
   managerUserInternalTxHistoryV2,
+  manageStakers,
 } from './loaders'
 import { initialFetch } from './utils'
 import { getAddress, isAddress } from 'viem'
@@ -95,5 +96,14 @@ export const indexArkham = async () => {
 }
 
 export const disconnect = async () => {
+  await prisma.$disconnect()
+}
+
+export const indexStakers = async () => {
+  console.log(`Starting Stakers indexing`)
+
+  await manageStakers({ prisma })
+
+  // disconnect from database at the end
   await prisma.$disconnect()
 }
