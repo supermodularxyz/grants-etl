@@ -9,6 +9,34 @@ import { erc20Abi, formatUnits, getAddress, hexToBigInt, parseUnits } from 'viem
 import { getLatestLogs } from './moralis'
 import { pgn } from 'viem/chains'
 
+type ApplicationTxProps = {
+  chainId: string
+  projectId: `0x${string}`
+  block: string
+  roundId: `0x${string}`
+}
+
+type NextPageParams = {
+  block_number: number
+  index: number
+  items_count: number
+  transaction_index?: number
+}
+
+type ExtraParamsArgs = {
+  url: string
+  next_page_params: NextPageParams
+  lastBlock: number
+}
+
+export type Price = {
+  token: `0x${string}`
+  code: string
+  price: number
+  timestamp: number
+  block: number
+}
+
 export const grantFetch = async (path: string) => {
   try {
     const res = await axios.get(`${process.env.GRANTS_BASE_URL}/${path}`)
@@ -28,13 +56,6 @@ export const initialFetch = async (chainId: string) => {
 
     console.log(`Current block on chainId ${chainId} is ${block.number?.toString()}`)
   } catch (error) {}
-}
-
-type ApplicationTxProps = {
-  chainId: string
-  projectId: `0x${string}`
-  block: string
-  roundId: `0x${string}`
 }
 
 export const getApplicationTx = async ({ chainId, projectId, block, roundId }: ApplicationTxProps) => {
@@ -83,19 +104,6 @@ export const handleDateString = (timestamp: any) => {
   const formattedDateString = new Date(Number(timestamp)).valueOf()
 
   return String(Number.isNaN(formattedDateString) ? new Date().valueOf() + 157680000 : formattedDateString)
-}
-
-type NextPageParams = {
-  block_number: number
-  index: number
-  items_count: number
-  transaction_index?: number
-}
-
-type ExtraParamsArgs = {
-  url: string
-  next_page_params: NextPageParams
-  lastBlock: number
 }
 
 export const createExtraParams = (next_page_params: NextPageParams) => {
@@ -157,14 +165,6 @@ export const fetchBlockTimestamp = async ({ chainId, blockNumbers }: { chainId: 
         .then((block) => block.timestamp)
     )
   )
-}
-
-export type Price = {
-  token: `0x${string}`
-  code: string
-  price: number
-  timestamp: number
-  block: number
 }
 
 export const getPGNPayoutBlock = async ({ payoutContract }: { payoutContract: `0x${string}` }) => {
