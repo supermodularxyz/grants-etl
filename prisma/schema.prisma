@@ -79,39 +79,42 @@ model UserHistory {
 }
 
 model UserTx {
-  id        Int      @id @default(autoincrement())
-  timestamp DateTime
-  block     BigInt
-  status    String
-  method    String?
-  hash      String
-  value     String
+  id                Int      @id @default(autoincrement())
+  timestamp         DateTime
+  block             BigInt
+  status            String
+  method            String?
+  hash              String
+  value             String
   // token_transfers
-  toName    String   @default("")
-  fromName  String   @default("")
-  to        String
-  from      String
-  gasUsed   BigInt
-  nonce     Int
-  chainId   Int
+  toName            String   @default("")
+  fromName          String   @default("")
+  to                String
+  from              String
+  mainAddress       String?
+  gasUsed           BigInt
+  nonce             Int
+  chainId           Int
+  internalTxIndexed Boolean  @default(false)
 
   @@unique([hash, nonce, from, chainId], name: "uid")
 }
 
 model UserInternalTx {
-  id        Int      @id @default(autoincrement())
-  timestamp DateTime
-  block     BigInt
-  success   Boolean  @default(false)
-  hash      String
-  type      String
-  value     String
-  from      String
-  to        String
-  fromName  String   @default("")
-  toName    String   @default("")
-  gasLimit  Int
-  chainId   Int
+  id          Int      @id @default(autoincrement())
+  timestamp   DateTime
+  block       BigInt
+  success     Boolean  @default(false)
+  hash        String
+  type        String
+  value       String
+  from        String
+  to          String
+  fromName    String   @default("")
+  toName      String   @default("")
+  mainAddress String?
+  gasLimit    Int
+  chainId     Int
 
   @@unique([hash, to, from, chainId], name: "uid")
 }

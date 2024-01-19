@@ -25,6 +25,7 @@
     "typescript": "^5.1.6"
   },
   "dependencies": {
+    "@ankr.com/ankr.js": "^0.5.0",
     "@cowprotocol/ts-dune-client": "^0.0.2",
     "@prisma/client": "^5.2.0",
     "@types/async": "^3.2.20",
