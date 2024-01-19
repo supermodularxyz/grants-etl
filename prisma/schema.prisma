@@ -262,3 +262,14 @@ model MatchingDistribution {
 
   @@unique([projectName, projectId, applicationId, matchPoolPercentage, contributionsCount], name: "uid")
 }
+
+model EthStaker {
+  id        Int      @id @default(autoincrement())
+  wallet    String
+  symbol    String
+  token     String
+  balance   Decimal  @db.Decimal
+  timestamp DateTime
+
+  @@unique([wallet, token], name: "uid")
+}

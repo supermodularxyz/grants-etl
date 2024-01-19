@@ -15,7 +15,8 @@
     "job:42161": "ts-node ./src/jobs/index.ts --chainId 42161",
     "job:passport": "ts-node ./src/jobs/index.ts --passport",
     "job:poap": "ts-node ./src/jobs/index.ts --poap",
-    "job:arkham": "ts-node ./src/jobs/index.ts --arkham"
+    "job:arkham": "ts-node ./src/jobs/index.ts --arkham",
+    "job:stakers": "ts-node ./src/jobs/index.ts --stakers"
   },
   "devDependencies": {
     "@types/node": "^20.4.4",

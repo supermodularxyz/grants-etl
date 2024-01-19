@@ -54,5 +54,11 @@ module.exports = {
       time: true,
       args: 'run job:arkham',
     },
+    {
+      name: 'job:stakers',
+      script: 'yarn',
+      time: true,
+      args: 'run job:stakers',
+    },
   ],
 }
