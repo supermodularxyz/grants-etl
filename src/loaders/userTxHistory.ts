@@ -31,7 +31,7 @@ type UserTxData = Omit<UserTx, 'id' | 'mainAddress'>
 
 const managerUserTxHistory = async ({ prisma, chainId }: Props): Promise<any> => {
   if (!supportedTxChains[Number(chainId)]) {
-    console.log(`No explorer found for ${chainId}`)
+    console.log(`No Tx manager found for ${chainId}`)
     return
   }
 

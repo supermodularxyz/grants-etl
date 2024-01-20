@@ -1,6 +1,5 @@
 import { getAddress, isAddress } from 'viem'
 import { PrismaClient, UserInternalTx } from '@prisma/client'
-import { explorers } from '../utils/client'
 import { AnkrProvider, Blockchain } from '@ankr.com/ankr.js'
 import { supportedTxChains } from '../utils/tx'
 
@@ -12,10 +11,8 @@ type Props = {
 type InternalTxData = Omit<UserInternalTx, 'id'>
 
 const managerUserInternalTxHistory = async ({ prisma, chainId }: Props): Promise<any> => {
-  const explorerForChain = explorers[Number(chainId)]
-
-  if (!explorerForChain || explorerForChain.length === 0) {
-    console.log(`No explorer found for ${chainId}`)
+  if (!supportedTxChains[Number(chainId)]) {
+    console.log(`No Internal Tx manager found for ${chainId}`)
     return
   }
 
