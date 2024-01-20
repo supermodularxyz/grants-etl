@@ -60,7 +60,7 @@ const managerUserTxHistory = async ({ prisma, chainId }: Props): Promise<any> =>
   // split voters list into chunks
   const votersGroup = []
 
-  const chunkSize = Number(chainId) === 424 ? 20 : 200
+  const chunkSize = Number(chainId) === 424 ? 20 : 100
 
   for (let i = 0; i < voters.length; i += chunkSize) {
     const chunk = voters.slice(i, i + chunkSize)
