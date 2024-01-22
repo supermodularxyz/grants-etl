@@ -1,6 +1,7 @@
 import { getAddress, isAddress } from 'viem'
 import { PrismaClient, UserTx } from '@prisma/client'
 import { UserTxManager, supportedTxChains } from '../utils/tx'
+import Queue from 'bull'
 
 type Props = {
   chainId: string
@@ -57,144 +58,122 @@ const managerUserTxHistory = async ({ prisma, chainId }: Props): Promise<any> =>
     return
   }
 
-  // split voters list into chunks
-  const votersGroup = []
-
-  const chunkSize = Number(chainId) === 424 ? 20 : 100
-
-  for (let i = 0; i < voters.length; i += chunkSize) {
-    const chunk = voters.slice(i, i + chunkSize)
-    votersGroup.push(chunk)
-  }
+  // create Queue
+  const userTxQueue = new Queue('userTxHistory')
 
   const txHandler = new UserTxManager(Number(chainId))
 
-  let cursor = 0
+  const concurrencyRate = Number(chainId) === 424 ? 20 : 100
+  // const concurrencyRate = 1
 
-  do {
-    try {
-      console.time('Index')
+  userTxQueue.process(concurrencyRate, async (job: Queue.Job<{ id: number; voter: string }>) => {
+    const { data: user } = job
+    const { voter: address } = user
 
-      const users: { id: number; voter: string }[] = votersGroup[cursor]
+    const tx = await txHandler.load(user.voter)
+    let data: Omit<UserTx, 'id'>[] = []
 
-      if (!users || users.length === 0) {
-        break
-      }
+    let extraTxData: UserTxData[] = []
 
-      const tx = await Promise.all(users.map((user) => txHandler.load(user.voter)))
+    const rowBlocks = new Set(tx.items.map((i) => Number(i.block)))
 
-      console.log(`Explorer request completed, starting row grouping`)
+    console.log({ address })
 
-      let data: Omit<UserTx, 'id'>[] = []
+    const userLatestTx = await prisma.userTx.findFirst({
+      where: {
+        OR: [{ from: address.toLowerCase() }, { from: address }, { to: address.toLowerCase() }, { to: address }],
+      },
+      orderBy: {
+        block: 'desc',
+      },
+    })
 
-      // TODO : Parallelize this process for all row in tx
-      await Promise.all(
-        tx.map(async (row) => {
-          let extraTxData: UserTxData[] = []
-
-          const rowBlocks = new Set(row.items.map((i) => Number(i.block)))
-
-          console.log({ address: row.address })
-
-          const userLatestTx = await prisma.userTx.findFirst({
-            where: {
-              OR: [
-                { from: row.address.toLowerCase() },
-                { from: row.address },
-                { to: row.address.toLowerCase() },
-                { to: row.address },
-              ],
-            },
-            orderBy: {
-              block: 'desc',
-            },
-          })
-
-          if (!row.items) {
-            console.log(`Empty Reponse Items for ${row.address}`)
-          }
-
-          const lastBlock = Number(userLatestTx?.block ?? 0)
-          const foundLastKnownBlock = rowBlocks.has(lastBlock)
-
-          if (foundLastKnownBlock) {
-            console.log(`Last known block data found in new user tx records`)
-          }
-
-          if (lastBlock === [...rowBlocks][0]) {
-            console.log(`Have latest tx data for ${row.address}`)
-          } else {
-            if (!userLatestTx?.block || !foundLastKnownBlock) {
-              console.log(`${row.address} has newer tx records, requesting more data`)
-              if (row.hasMore) {
-                extraTxData = await txHandler.loadMore(
-                  row.address,
-                  'next_page_params' in row ? row.next_page_params : row.nextPageToken,
-                  lastBlock
-                )
-
-                console.log(`Loaded extraTxData`)
-              }
-            }
-
-            const txData = [...extraTxData, ...row.items]
-
-            if (txData) {
-              for (let i = 0; i < txData.length; i++) {
-                const item = txData[i]
-
-                const [newAddress, mainAddress] =
-                  (row.address === item.to ? [item.from, item.to] : [item.to, item.from]) ?? ''
-                if (isAddress(newAddress)) {
-                  await prisma.user.upsert({
-                    where: {
-                      address: getAddress(newAddress),
-                    },
-                    create: {
-                      address: getAddress(newAddress),
-                    },
-                    update: {},
-                  })
-                }
-
-                data.push({ ...item, mainAddress })
-              }
-            }
-          }
-        })
-      )
-
-      if (data.length > 0) {
-        console.log(`Row grouping completed, ${data.length} groups found. Creating data chunks`)
-
-        const chunkSize = 300
-        const chunks = []
-
-        for (let i = 0; i < data.length; i += chunkSize) {
-          const chunk = data.slice(i, i + chunkSize)
-          chunks.push(chunk)
-        }
-
-        console.log(`Data chunks done, writing chunks to database`)
-
-        for (const chunk of chunks) {
-          await prisma.userTx.createMany({
-            data: chunk,
-            skipDuplicates: true,
-          })
-        }
-      }
-
-      cursor += 1
-
-      console.log(`At user index ${cursor}`)
-      console.timeEnd('Index')
-      console.timeLog('history')
-    } catch (error) {
-      console.log(`Something failed, retrying in few seconds...`)
-      await new Promise((res, rej) => setTimeout(res, 20000))
+    if (!tx.items) {
+      console.log(`Empty Reponse Items for ${address}`)
     }
-  } while ((cursor as number) > 0)
+
+    const lastBlock = Number(userLatestTx?.block ?? 0)
+    const foundLastKnownBlock = rowBlocks.has(lastBlock)
+
+    if (foundLastKnownBlock) {
+      console.log(`Last known block data found in new user tx records`)
+    }
+
+    if (lastBlock === [...rowBlocks][0]) {
+      console.log(`Have latest tx data for ${address}`)
+    } else {
+      if (!userLatestTx?.block || !foundLastKnownBlock) {
+        console.log(`${address} has newer tx records, requesting more data`)
+        if (tx.hasMore) {
+          extraTxData = await txHandler.loadMore(
+            address,
+            'next_page_params' in tx ? tx.next_page_params : tx.nextPageToken,
+            lastBlock
+          )
+
+          console.log(`Loaded extraTxData`)
+        }
+      }
+
+      const txData = [...extraTxData, ...tx.items]
+
+      if (txData) {
+        for (let i = 0; i < txData.length; i++) {
+          const item = txData[i]
+
+          const [newAddress, mainAddress] = (address === item.to ? [item.from, item.to] : [item.to, item.from]) ?? ''
+          if (isAddress(newAddress)) {
+            await prisma.user.upsert({
+              where: {
+                address: getAddress(newAddress),
+              },
+              create: {
+                address: getAddress(newAddress),
+              },
+              update: {},
+            })
+          }
+
+          data.push({ ...item, mainAddress })
+        }
+      }
+    }
+
+    if (data.length > 0) {
+      console.log(`Row grouping completed, ${data.length} groups found. Creating data chunks`)
+
+      const chunkSize = 300
+      const chunks = []
+
+      for (let i = 0; i < data.length; i += chunkSize) {
+        const chunk = data.slice(i, i + chunkSize)
+        chunks.push(chunk)
+      }
+
+      console.log(`Data chunks done, writing chunks to database`)
+
+      for (const chunk of chunks) {
+        await prisma.userTx.createMany({
+          data: chunk,
+          skipDuplicates: true,
+        })
+      }
+    }
+
+    console.timeLog(`TxHistory ${address}`)
+
+    return Promise.resolve(true)
+  })
+
+  userTxQueue.on('drained', () => {
+    console.log(`Queue is empty`)
+    userTxQueue.close()
+  })
+
+  // Add voters to queue
+  for (const voter of voters.slice(0, 100)) {
+    userTxQueue.add(voter)
+  }
 }
 
 export default managerUserTxHistory
