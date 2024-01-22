@@ -171,7 +171,7 @@ const managerUserTxHistory = async ({ prisma, chainId }: Props): Promise<any> =>
   })
 
   // Add voters to queue
-  for (const voter of voters.slice(0, 100)) {
+  for (const voter of voters) {
     userTxQueue.add(voter)
   }
 }
