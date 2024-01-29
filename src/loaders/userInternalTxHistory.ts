@@ -1,217 +1,164 @@
 import { getAddress, isAddress } from 'viem'
-import { loadExtraTxData } from '../utils'
-import { PrismaClient } from '@prisma/client'
-import { explorers } from '../utils/client'
+import { PrismaClient, UserInternalTx } from '@prisma/client'
+import { AnkrProvider, Blockchain } from '@ankr.com/ankr.js'
+import Queue from 'bull'
+import { supportedTxChains } from '../utils/tx'
 
 type Props = {
   chainId: string
   prisma: PrismaClient
 }
 
-export type InternalRow = {
-  timestamp: Date
-  block: number
-  success: boolean
-  transaction_hash: string
-  value: string
-  type: string
-  to?: {
-    name: string
-    hash: string
-  }
-  from: {
-    name: string
-    hash: string
-  }
-  gas_limit: number
-  // token_transfers
-}
-
-type UserTxData = {
-  timestamp: Date
-  block: number
-  success: boolean
-  hash: string
-  type: string
-  value: string
-  to: string
-  toName: string
-  from: string
-  fromName: string
-  gasLimit: number
-  chainId: number
-}
+// type InternalTxData = Omit<UserInternalTx, 'id'>
 
 const managerUserInternalTxHistory = async ({ prisma, chainId }: Props): Promise<any> => {
-  const explorerForChain = explorers[Number(chainId)]
-
-  if (!explorerForChain || explorerForChain.length === 0) {
-    console.log(`No explorer found for ${chainId}`)
+  if (!supportedTxChains[Number(chainId)]) {
+    console.log(`No Internal Tx manager found for ${chainId}`)
     return
   }
 
-  // load all users count
-  const voters = await prisma.vote.findMany({
-    distinct: ['voter'],
-    where: {
-      chainId: Number(chainId),
-    },
-    select: {
-      id: true,
-      voter: true,
-    },
-  })
+  const provider = new AnkrProvider(process.env.ANKR_PROVIDER as string)
+  const blockchain = supportedTxChains[Number(chainId)] as Blockchain
 
-  const votersCount = voters.length
+  const userInternalTxQueue = new Queue('userInternalTx')
 
-  console.log(`Indexing ${votersCount} voters`)
-  console.time('history')
+  await userInternalTxQueue.obliterate({ force: true })
 
-  if (votersCount === 0) {
-    console.log(`No users found`)
-    return
-  }
+  const concurrencyRate = 100
 
-  // split voters list into chunks
-  const votersGroup = []
+  userInternalTxQueue.process(
+    concurrencyRate,
+    async (job: Queue.Job<{ id: number; mainAddress: string | null; hash: string }>) => {
+      const { data: tx } = job
 
-  for (let i = 0; i < voters.length; i += 20) {
-    const chunk = voters.slice(i, i + 20)
-    votersGroup.push(chunk)
-  }
+      console.log(`Starting job for tx: ${tx.hash}`)
 
-  let cursor = 0
+      // get internal TXs
+      const internalTx = await provider.getInternalTransactionsByParentHash({
+        blockchain,
+        parentTransactionHash: tx.hash,
+        onlyWithValue: false,
+      })
 
-  do {
-    try {
-      console.time('Index')
-
-      const users: { id: number; voter: string }[] = votersGroup[cursor]
-
-      if (!users || users.length === 0) {
-        break
-      }
-
-      const rawTxs = (await Promise.all(
-        users.map((user) =>
-          fetch(`${explorerForChain}/api/v2/addresses/${user.voter}/internal-transactions?filter=to%20%7C%20from`).then(
-            async (r) => ({ address: user.voter, response: await r.json() })
-          )
-        )
-      )) as {
-        address: string
-        response: {
-          items: InternalRow[]
-          next_page_params?: any
-        }
-      }[]
-
-      console.log(`Explorer request completed, starting row grouping`)
-
-      const data: UserTxData[] = []
-
-      for (const row of rawTxs) {
-        let extraTxData: InternalRow[] = []
-
-        const rowBlocks = new Set(row.response.items.map((i) => i.block))
-
-        // Make sure new data is coming from current user request by checking against last updated tx record
-        const userLatestTx = await prisma.userInternalTx.findFirst({
-          where: {
-            AND: [{ from: row.address }, { to: row.address }],
-          },
-          orderBy: {
-            block: 'desc',
-          },
-        })
-
-        if (!row.response.items) {
-          console.log(`Empty Reponse Items for ${row.address}`)
-        }
-
-        const lastBlock = Number(userLatestTx?.block) ?? 0
-
-        if (!userLatestTx?.block || !rowBlocks.has(lastBlock)) {
-          console.log(`${row.address} has newer tx records, requesting more data`)
-          if (row.response.next_page_params) {
-            extraTxData = (await loadExtraTxData({
-              url: `${explorerForChain}/api/v2/addresses/${row.address}/internal-transactions?filter=to%20%7C%20from`,
-              next_page_params: row.response.next_page_params,
-              lastBlock,
-            })) as InternalRow[]
-
-            console.log(`Loaded extraTxData`)
-          }
-        }
-
-        const txData = [...extraTxData, ...row.response.items]
-
-        if (txData) {
-          for (let i = 0; i < txData.length; i++) {
-            const item = txData[i]
-
-            const newAddress = (row.address === item.to?.hash ? item.from.hash : item.to?.hash) ?? ''
-            if (isAddress(newAddress)) {
-              await prisma.user.upsert({
-                where: {
-                  address: getAddress(newAddress),
-                },
-                create: {
-                  address: getAddress(newAddress),
-                },
-                update: {},
-              })
-            }
-
-            data.push({
-              timestamp: item.timestamp ?? new Date(0).toISOString(),
-              block: item.block ?? 0,
-              hash: item.transaction_hash,
-              value: item.value,
-              toName: item.to?.name ?? '',
-              fromName: item.from?.name ?? '',
-              to: item.to?.hash ?? '',
-              from: item.from.hash,
-              gasLimit: Number(item.gas_limit) ?? 0,
-              chainId: Number(chainId),
-              success: item.success,
-              type: item.type,
+      for (const curr of internalTx.internalTransactions) {
+        if (
+          !tx.mainAddress ||
+          (tx.mainAddress &&
+            (curr.fromAddress.toLowerCase() === tx.mainAddress.toLowerCase() ||
+              curr.toAddress.toLowerCase() === tx.mainAddress.toLowerCase()))
+        ) {
+          const newAddress = (tx.mainAddress === curr.toAddress ? curr.fromAddress : curr.toAddress) ?? ''
+          if (isAddress(newAddress)) {
+            await prisma.user.upsert({
+              where: {
+                address: getAddress(newAddress),
+              },
+              create: {
+                address: getAddress(newAddress),
+              },
+              update: {},
             })
           }
+
+          // commit tx to db
+          prisma.userInternalTx.upsert({
+            where: {
+              uid: {
+                hash: curr.transactionHash,
+                to: curr.toAddress,
+                from: curr.fromAddress,
+                chainId: Number(chainId),
+              },
+            },
+            create: {
+              chainId: Number(chainId),
+              timestamp: new Date(Number(BigInt(curr.timestamp ?? '0') * BigInt('1000'))),
+              block: BigInt(curr.blockHeight),
+              hash: curr.transactionHash,
+              value: curr.value,
+              toName: '',
+              fromName: '',
+              to: curr.toAddress,
+              from: curr.fromAddress,
+              success: true,
+              type: curr.callType,
+              gasLimit: curr.gas,
+              mainAddress: tx.mainAddress,
+            },
+            update: {},
+          })
         }
       }
 
-      console.log(`Row grouping completed, ${data.length} groups found. Creating data chunks`)
+      await prisma.userTx.update({
+        where: {
+          id: tx.id,
+        },
+        data: {
+          internalTxIndexed: true,
+        },
+      })
 
-      const chunkSize = 300
-      const chunks = []
+      console.log(`Completed job for tx: ${tx.hash}`)
 
-      for (let i = 0; i < data.length; i += chunkSize) {
-        const chunk = data.slice(i, i + chunkSize)
-        chunks.push(chunk)
-      }
-
-      console.log(`Data chunks done, writing chunks to database`)
-
-      for (const chunk of chunks) {
-        await prisma.userInternalTx.createMany({
-          data: chunk,
-          skipDuplicates: true,
-        })
-      }
-
-      cursor = users[users.length - 1].id
-
-      console.log(`At user index ${cursor}`)
-      console.timeEnd('Index')
-      console.timeLog('history')
-    } catch (error) {
-      console.log(error)
-
-      console.log(`Something failed, retrying in few seconds...`)
-      await new Promise((res, rej) => setTimeout(res, 60000))
+      return Promise.resolve(true)
     }
-  } while ((cursor as number) > 0)
+  )
+
+  let completed = false
+  let _cursor = 0
+  let total = 0
+
+  const fetchMoreParentTx = async ({ cursor }: { cursor: number }) => {
+    const parentTransactions = await prisma.userTx.findMany({
+      where: {
+        chainId: Number(chainId),
+        internalTxIndexed: false,
+      },
+      select: {
+        id: true,
+        hash: true,
+        mainAddress: true,
+      },
+      take: 50_000,
+      orderBy: {
+        id: 'asc',
+      },
+      ...(cursor > 0 ? { skip: 1, cursor: { id: cursor } } : {}),
+    })
+
+    if (parentTransactions.length === 0) {
+      completed = true
+      return cursor
+    }
+
+    for (const parentTx of parentTransactions) {
+      userInternalTxQueue.add(parentTx)
+    }
+
+    const lastParentTx = parentTransactions[parentTransactions.length - 1]
+    total += parentTransactions.length
+
+    console.log(`Indexing parent transactions at cursor ${cursor}: ${total}`)
+
+    return lastParentTx.id
+  }
+
+  _cursor = await fetchMoreParentTx({ cursor: _cursor })
+
+  userInternalTxQueue.on('failed', async (job) => {
+    return await job.retry()
+  })
+
+  userInternalTxQueue.on('drained', async () => {
+    console.log(`Queue is empty`)
+    if (completed) {
+      userInternalTxQueue.close()
+    } else {
+      _cursor = await fetchMoreParentTx({ cursor: _cursor })
+      userInternalTxQueue.resume()
+    }
+  })
 }
 
 export default managerUserInternalTxHistory

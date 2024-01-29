@@ -1,6 +1,11 @@
 import Moralis from 'moralis'
 import { toHex } from 'viem'
 
+export enum TOKENTYPE {
+  ERC20,
+  NFT,
+}
+
 export const getLatestLogs = async ({ chainId, address }: { chainId: number; address: `0x${string}` }) => {
   try {
     const response = await Moralis.EvmApi.events.getContractEvents({
@@ -31,4 +36,37 @@ export const getLatestLogs = async ({ chainId, address }: { chainId: number; add
   } catch (error) {
     return []
   }
+}
+
+export const moralisLoader = async ({
+  chain,
+  address,
+  tokenType,
+}: {
+  chain: string
+  address: string
+  tokenType: TOKENTYPE
+}) => {
+  let cursor = ''
+  let data: any[] = []
+
+  const handler =
+    tokenType === TOKENTYPE.ERC20
+      ? Moralis.EvmApi.token.getWalletTokenTransfers
+      : Moralis.EvmApi.nft.getWalletNFTTransfers
+
+  do {
+    // TODO : Implement the loader for which type
+    const res = await handler({
+      chain,
+      address,
+      ...(cursor.length > 0 ? { cursor } : {}),
+    })
+
+    cursor = res.raw.cursor ?? ''
+
+    data = [...data, ...res.raw.result]
+  } while (cursor.length > 0)
+
+  return data
 }

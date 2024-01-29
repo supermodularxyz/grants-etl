@@ -273,3 +273,79 @@ model EthStaker {
 
   @@unique([wallet, token], name: "uid")
 }
+
+model Erc20TransferHistory {
+  id                 Int      @id @default(autoincrement())
+  token_name         String
+  token_symbol       String
+  token_decimals     Int
+  from_address       String
+  from_address_label String?
+  to_address         String
+  to_address_label   String?
+  address            String
+  block_hash         String
+  block_number       Int
+  block_timestamp    DateTime
+  transaction_hash   String
+  transaction_index  Int
+  log_index          Int
+  value              Decimal  @db.Decimal
+  possible_spam      Boolean
+  value_decimal      Decimal  @db.Decimal
+  verified_contract  Boolean
+  chainId            Int
+
+  @@unique([from_address, to_address, address, log_index, block_number], name: "uid")
+}
+
+model NftTransferHistory {
+  id                  Int      @id @default(autoincrement())
+  block_number        Int
+  block_timestamp     DateTime
+  block_hash          String
+  transaction_hash    String
+  transaction_index   Int
+  log_index           Int
+  value               Decimal  @db.Decimal
+  contract_type       String
+  transaction_type    String
+  token_address       String
+  token_id            String
+  from_address        String
+  from_address_label  String?
+  to_address          String
+  to_address_label    String?
+  amount              Int
+  verified            Int
+  operator            String?
+  possible_spam       Boolean
+  verified_collection Boolean
+  chainId             Int
+
+  @@unique([from_address, to_address, token_address, log_index, block_number, chainId], name: "uid")
+}
+
+// model NftBalance {
+//   id                  Int      @id @default(autoincrement())
+//   amount              Int
+//   token_id            String
+//   token_address       String
+//   contract_type       String
+//   owner_of            String
+//   last_metadata_sync  DateTime
+//   last_token_uri_sync DateTime
+//   metadata            Json?
+//   block_number        Int
+//   block_number_minted Int
+//   name                String
+//   symbol              String
+//   token_hash          String
+//   token_uri           String
+//   minter_address      String
+//   verified_collection Boolean
+//   possible_spam       Boolean
+//   chainId             Int
+
+//   @@unique([token_id, token_address, owner_of, chainId], name: "uid")
+// }
