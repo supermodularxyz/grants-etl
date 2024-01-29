@@ -11,8 +11,9 @@ import {
   managePoaps,
   manageArkham,
   manageRoundDistribution,
-  managerUserInternalTxHistoryV2,
   manageStakers,
+  manageERC20,
+  manageNFT,
 } from './loaders'
 import { initialFetch } from './utils'
 import { getAddress, isAddress } from 'viem'
@@ -58,11 +59,13 @@ export async function main({ chainId = '1', roundId }: { chainId: string; roundI
   await managerUserTxHistory({ chainId, prisma })
 
   console.log(`Start loading user internal tx history`)
-  if (chainId === '424') {
-    await managerUserInternalTxHistory({ chainId, prisma })
-  } else {
-    await managerUserInternalTxHistoryV2({ chainId, prisma })
-  }
+  await managerUserInternalTxHistory({ chainId, prisma })
+
+  console.log(`Start loading ERC20 transfer history`)
+  await manageERC20({ prisma, chainId })
+
+  console.log(`Start loading NFT transfer history`)
+  await manageNFT({ prisma, chainId })
 
   // disconnect from database at the end
   await prisma.$disconnect()

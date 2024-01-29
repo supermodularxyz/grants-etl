@@ -8,134 +8,96 @@ type Props = {
   prisma: PrismaClient
 }
 
-export type Row = {
-  timestamp: Date
-  block: number
-  status: string
-  method: string | null
-  hash: string
-  value: string
-  to?: {
-    name: string
-    hash: string
-  }
-  from: {
-    name: string
-    hash: string
-  }
-  gas_used: number
-  nonce: number
-  // token_transfers
-}
-
-type UserTxData = Omit<UserTx, 'id' | 'mainAddress'>
-
 const managerUserTxHistory = async ({ prisma, chainId }: Props): Promise<any> => {
   if (!supportedTxChains[Number(chainId)]) {
     console.log(`No Tx manager found for ${chainId}`)
     return
   }
 
-  // load all users count
-  const voters = await prisma.vote.findMany({
-    distinct: ['voter'],
+  // load all passports with scores > 0
+  const passports = await prisma.passport.findMany({
     where: {
-      chainId: Number(chainId),
+      score: {
+        gt: 0,
+      },
     },
     select: {
       id: true,
-      voter: true,
+      userAddress: true,
     },
   })
 
-  const votersCount = voters.length
+  const passportsCount = passports.length
 
-  console.log(`Indexing ${votersCount} voters`)
-  console.time('history')
+  console.log(`Indexing ${passportsCount} passports`)
+  console.time('TxHistory')
 
-  if (votersCount === 0) {
+  if (passportsCount === 0) {
     console.log(`No voters found`)
-    return
+    return Promise.resolve(true)
   }
 
   // create Queue
   const userTxQueue = new Queue('userTxHistory')
 
+  await userTxQueue.obliterate({ force: true })
+
   const txHandler = new UserTxManager(Number(chainId))
 
-  const concurrencyRate = Number(chainId) === 424 ? 20 : 100
-  // const concurrencyRate = 1
+  const concurrencyRate = 100
 
-  userTxQueue.process(concurrencyRate, async (job: Queue.Job<{ id: number; voter: string }>) => {
-    const { data: user } = job
-    const { voter: address } = user
+  userTxQueue.process(concurrencyRate, async (job: Queue.Job<{ id: number; userAddress: string }>) => {
+    // userTxQueue.process(async (job: Queue.Job<{ id: number; userAddress: string }>) => {
+    const { data: passport } = job
 
-    const tx = await txHandler.load(user.voter)
-    let data: Omit<UserTx, 'id'>[] = []
+    const { userAddress: address } = passport
 
-    let extraTxData: UserTxData[] = []
+    console.log(`Processing ${address}`)
 
-    const rowBlocks = new Set(tx.items.map((i) => Number(i.block)))
-
-    console.log({ address })
-
+    // get the last recorded block
     const userLatestTx = await prisma.userTx.findFirst({
       where: {
-        OR: [{ from: address.toLowerCase() }, { from: address }, { to: address.toLowerCase() }, { to: address }],
+        OR: [{ from: address.toLowerCase() }, { from: address }],
+        // OR: [{ from: address.toLowerCase() }, { from: address }, { to: address.toLowerCase() }, { to: address }],
       },
       orderBy: {
         block: 'desc',
       },
+      select: {
+        block: true,
+      },
     })
 
-    if (!tx.items) {
-      console.log(`Empty Reponse Items for ${address}`)
+    let data: Omit<UserTx, 'id'>[] = []
+
+    const lastBlock = Number(userLatestTx?.block ?? '0')
+
+    console.log(`${address} requesting all tx data fromBlock: ${lastBlock}`)
+    const txData = await txHandler.loadMore(address, lastBlock)
+
+    if (txData.length === 0) {
+      console.log(`No new tx data found for ${address}`)
+      return Promise.resolve(true)
     }
 
-    const lastBlock = Number(userLatestTx?.block ?? 0)
-    const foundLastKnownBlock = rowBlocks.has(lastBlock)
+    if (txData) {
+      for (let i = 0; i < txData.length; i++) {
+        const item = txData[i]
 
-    if (foundLastKnownBlock) {
-      console.log(`Last known block data found in new user tx records`)
-    }
-
-    if (lastBlock === [...rowBlocks][0]) {
-      console.log(`Have latest tx data for ${address}`)
-    } else {
-      if (!userLatestTx?.block || !foundLastKnownBlock) {
-        console.log(`${address} has newer tx records, requesting more data`)
-        if (tx.hasMore) {
-          extraTxData = await txHandler.loadMore(
-            address,
-            'next_page_params' in tx ? tx.next_page_params : tx.nextPageToken,
-            lastBlock
-          )
-
-          console.log(`Loaded extraTxData`)
+        const [newAddress, mainAddress] = address === item.to ? [item.from, item.to] : [item.to, item.from]
+        if (isAddress(newAddress)) {
+          await prisma.user.upsert({
+            where: {
+              address: getAddress(newAddress),
+            },
+            create: {
+              address: getAddress(newAddress),
+            },
+            update: {},
+          })
         }
-      }
 
-      const txData = [...extraTxData, ...tx.items]
-
-      if (txData) {
-        for (let i = 0; i < txData.length; i++) {
-          const item = txData[i]
-
-          const [newAddress, mainAddress] = (address === item.to ? [item.from, item.to] : [item.to, item.from]) ?? ''
-          if (isAddress(newAddress)) {
-            await prisma.user.upsert({
-              where: {
-                address: getAddress(newAddress),
-              },
-              create: {
-                address: getAddress(newAddress),
-              },
-              update: {},
-            })
-          }
-
-          data.push({ ...item, mainAddress })
-        }
+        data.push({ ...item, mainAddress })
       }
     }
 
@@ -159,8 +121,8 @@ const managerUserTxHistory = async ({ prisma, chainId }: Props): Promise<any> =>
         })
       }
     }
-
-    console.timeLog(`TxHistory ${address}`)
+    console.log(`Committed tx data for ${address}`)
+    console.timeLog('TxHistory')
 
     return Promise.resolve(true)
   })
@@ -170,9 +132,14 @@ const managerUserTxHistory = async ({ prisma, chainId }: Props): Promise<any> =>
     userTxQueue.close()
   })
 
+  userTxQueue.on('failed', async (job) => {
+    return await job.retry()
+  })
+
   // Add voters to queue
-  for (const voter of voters) {
-    userTxQueue.add(voter)
+  console.log(`Adding passports to queue`)
+  for (const passport of passports) {
+    userTxQueue.add(passport)
   }
 }
 
