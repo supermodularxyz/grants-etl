@@ -44,7 +44,7 @@ const manageNFT = async ({ prisma, chainId }: Props): Promise<any> => {
 
   await nftQueue.obliterate({ force: true })
 
-  const concurrencyRate = 100
+  const concurrencyRate = 15
 
   nftQueue.process(concurrencyRate, async (job: Queue.Job<{ id: number; userAddress: string }>) => {
     try {

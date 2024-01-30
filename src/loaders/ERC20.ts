@@ -45,7 +45,7 @@ const manageERC20 = async ({ prisma, chainId }: Props): Promise<any> => {
 
   await erc20Queue.obliterate({ force: true })
 
-  const concurrencyRate = 20
+  const concurrencyRate = 15
 
   erc20Queue.process(concurrencyRate, async (job: Queue.Job<{ id: number; userAddress: string }>) => {
     try {
@@ -131,7 +131,6 @@ const manageERC20 = async ({ prisma, chainId }: Props): Promise<any> => {
       return Promise.resolve(true)
     } catch (error: any) {
       console.log(error)
-      process.exit(0)
       throw error
     }
   })
