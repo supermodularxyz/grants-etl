@@ -41,10 +41,12 @@ export const getLatestLogs = async ({ chainId, address }: { chainId: number; add
 export const moralisLoader = async ({
   chain,
   address,
+  fromBlock = 0,
   tokenType,
 }: {
   chain: string
   address: string
+  fromBlock: number
   tokenType: TOKENTYPE
 }) => {
   let cursor = ''
@@ -60,6 +62,7 @@ export const moralisLoader = async ({
     const res = await handler({
       chain,
       address,
+      ...(fromBlock > 0 ? { fromBlock } : {}),
       ...(cursor.length > 0 ? { cursor } : {}),
     })
 

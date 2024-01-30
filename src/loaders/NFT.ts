@@ -56,7 +56,24 @@ const manageNFT = async ({ prisma, chainId }: Props): Promise<any> => {
 
       let data: Omit<NftTransferHistory, 'id'>[] = []
 
-      const nftTransfers = await moralisLoader({ chain: toHex(chainId), address, tokenType: TOKENTYPE.NFT })
+      const latestTx = await prisma.nftTransferHistory.findFirst({
+        where: {
+          ownerAddress: address,
+        },
+        select: {
+          block_number: true,
+        },
+        orderBy: {
+          block_number: 'desc',
+        },
+      })
+
+      const nftTransfers = await moralisLoader({
+        chain: toHex(chainId),
+        address,
+        fromBlock: latestTx?.block_number || 0,
+        tokenType: TOKENTYPE.NFT,
+      })
       // TODO : Handle NFT Balances here
 
       if (nftTransfers.length === 0) {
@@ -76,6 +93,7 @@ const manageNFT = async ({ prisma, chainId }: Props): Promise<any> => {
             value: new Decimal(item.value),
             amount: Number(item.amount),
             verified: Number(item.verified),
+            ownerAddress: address,
             chainId,
           })
         }

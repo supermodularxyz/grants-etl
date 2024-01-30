@@ -4,6 +4,7 @@ import Queue from 'bull'
 import { Decimal } from '@prisma/client/runtime/library'
 import { supportedTxChains } from '../utils/tx'
 import { TOKENTYPE, moralisLoader } from '../utils/moralis'
+import { AxiosError } from 'axios'
 
 type Props = {
   chainId: string
@@ -44,7 +45,7 @@ const manageERC20 = async ({ prisma, chainId }: Props): Promise<any> => {
 
   await erc20Queue.obliterate({ force: true })
 
-  const concurrencyRate = 100
+  const concurrencyRate = 20
 
   erc20Queue.process(concurrencyRate, async (job: Queue.Job<{ id: number; userAddress: string }>) => {
     try {
@@ -56,7 +57,26 @@ const manageERC20 = async ({ prisma, chainId }: Props): Promise<any> => {
 
       let data: Omit<Erc20TransferHistory, 'id'>[] = []
 
-      const erc20Transfers = await moralisLoader({ chain: toHex(chainId), address, tokenType: TOKENTYPE.ERC20 })
+      // TODO : Get last block indexed and use it to load more
+
+      const latestTx = await prisma.erc20TransferHistory.findFirst({
+        where: {
+          ownerAddress: address,
+        },
+        select: {
+          block_number: true,
+        },
+        orderBy: {
+          block_number: 'desc',
+        },
+      })
+
+      const erc20Transfers = await moralisLoader({
+        chain: toHex(chainId),
+        fromBlock: latestTx?.block_number || 0,
+        address,
+        tokenType: TOKENTYPE.ERC20,
+      })
       // TODO : Handle ERC20 Balances here
 
       if (erc20Transfers.length === 0) {
@@ -72,12 +92,15 @@ const manageERC20 = async ({ prisma, chainId }: Props): Promise<any> => {
             ...item,
             chainId,
             token_logo: undefined,
+            token_name: item.token_name ?? '',
+            token_symbol: item.token_symbol ?? '',
             token_decimals: Number(item.token_decimals ?? '0'),
             block_number: Number(item.block_number ?? '0'),
             transaction_index: Number(item.transaction_index ?? '0'),
             log_index: Number(item.log_index),
             value: new Decimal(item.value ?? '0'),
             value_decimal: new Decimal(item.value_decimal ?? '0'),
+            ownerAddress: address,
           })
         }
       }
@@ -106,14 +129,18 @@ const manageERC20 = async ({ prisma, chainId }: Props): Promise<any> => {
       console.timeLog('erc20Transfers')
 
       return Promise.resolve(true)
-    } catch (error) {
+    } catch (error: any) {
       console.log(error)
+      process.exit(0)
       throw error
     }
   })
 
+  let completed = false
+
   erc20Queue.on('drained', () => {
     console.log(`Queue is empty`)
+    completed = true
     erc20Queue.close()
   })
 
@@ -126,6 +153,13 @@ const manageERC20 = async ({ prisma, chainId }: Props): Promise<any> => {
   for (const passport of passports) {
     erc20Queue.add(passport)
   }
+
+  await new Promise(async (res, rej) => {
+    do {
+      await new Promise((_res, _rej) => setTimeout(() => _res(true), 60000))
+    } while (!completed)
+    return res(true)
+  })
 }
 
 export default manageERC20

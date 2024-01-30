@@ -294,6 +294,7 @@ model Erc20TransferHistory {
   possible_spam      Boolean
   value_decimal      Decimal  @db.Decimal
   verified_contract  Boolean
+  ownerAddress       String
   chainId            Int
 
   @@unique([from_address, to_address, address, log_index, block_number], name: "uid")
@@ -322,6 +323,7 @@ model NftTransferHistory {
   possible_spam       Boolean
   verified_collection Boolean
   chainId             Int
+  ownerAddress        String
 
   @@unique([from_address, to_address, token_address, log_index, block_number, chainId], name: "uid")
 }
