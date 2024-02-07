@@ -1548,6 +1548,11 @@ decompress-response@^6.0.0:
   dependencies:
     mimic-response "^3.1.0"
 
+deeks@3.0.2:
+  version "3.0.2"
+  resolved "https://registry.yarnpkg.com/deeks/-/deeks-3.0.2.tgz#49d908fb2b797554a139aede17176b11679eb89f"
+  integrity sha512-c6OmjIygIB/avwXwEQOiODS+nw6fEX4cvOdDMqdL7dt3dicV/xykAJ9AeVc/8/JTVQDuacjRc9KCMmXafL1Y4A==
+
 deep-extend@^0.6.0:
   version "0.6.0"
   resolved "https://registry.yarnpkg.com/deep-extend/-/deep-extend-0.6.0.tgz#c4fa7c95404a17a9c3e8ca7e1537312b736330ac"
@@ -1589,6 +1594,11 @@ diff@^4.0.1:
   version "4.0.2"
   resolved "https://registry.yarnpkg.com/diff/-/diff-4.0.2.tgz#60f3aecb89d5fae520c11aa19efc2bb982aade7d"
   integrity sha512-58lmxKSA4BNyLz+HHMUzlOEpg09FV+ev6ZMe3vJihgdxzgcwZ8VoEEPmALCZG9LmqfVoNMMKpttIYTVG6uDY7A==
+
+doc-path@4.0.2:
+  version "4.0.2"
+  resolved "https://registry.yarnpkg.com/doc-path/-/doc-path-4.0.2.tgz#157ddd33b86282bdf58cf4b9979bf9483cf9a95f"
+  integrity sha512-OqZEk7EM1aP3JpO+mq0pv1msEJWrzZVXu4q3YjEYJKc+Wt3/chac4KJdaGueK5IGemOwfptrLctG9I8xkb59qQ==
 
 dotenv@^16.3.1:
   version "16.3.1"
@@ -2285,6 +2295,14 @@ js-yaml@^4.1.0:
   integrity sha512-wpxZs9NoxZaJESJGIZTyDEaYpl0FKSA+FB9aJiyemKhMwkxQg63h4T1KJgUGHpTqPDNRcmmYLugrRjJlBtWvRA==
   dependencies:
     argparse "^2.0.1"
+
+json-2-csv@^5.0.1:
+  version "5.0.1"
+  resolved "https://registry.yarnpkg.com/json-2-csv/-/json-2-csv-5.0.1.tgz#ffbdd597cfdcfa7ec805a039cbdba752dc3d8af4"
+  integrity sha512-rP9ChyMskS0angbvFdQ43SwEe72mEvqcY1/V2OeukQWxtlreUuZWhMlTdWjtd4L6kJxq+HPFTI06yqLvZiEVIA==
+  dependencies:
+    deeks "3.0.2"
+    doc-path "4.0.2"
 
 json-schema-compare@^0.2.2:
   version "0.2.2"

@@ -11,12 +11,13 @@ datasource db {
 }
 
 model User {
-  id       Int       @id @default(autoincrement())
-  address  String    @unique
-  votes    Vote[]
-  passport Passport?
-  poaps    Poap[]
-  Arkham   Arkham[]
+  id               Int               @id @default(autoincrement())
+  address          String            @unique
+  votes            Vote[]
+  passport         Passport?
+  poaps            Poap[]
+  Arkham           Arkham[]
+  PassportArchives PassportArchive[]
 }
 
 model Arkham {
@@ -54,6 +55,21 @@ model Passport {
   user           User   @relation(fields: [userAddress], references: [address])
   updatedAt      Int
   stamps         Json?
+}
+
+model PassportArchive {
+  id             Int    @id @default(autoincrement())
+  userAddress    String @unique
+  score          Float
+  scoreThreshold Float
+  scoreTimestamp BigInt
+  user           User   @relation(fields: [userAddress], references: [address])
+  updatedAt      Int
+  stamps         Json?
+  roundId        String
+  chainId        Int
+
+  @@unique([userAddress, roundId], name: "uid")
 }
 
 model Stamp {
@@ -172,6 +188,7 @@ model Round {
   // user generated fields
   addedLastApplications  Boolean                @default(false)
   addedLastVotes         Boolean                @default(false)
+  addedLastPassports     Boolean                @default(false)
   chainId                Int
   roundId                String
   programContractAddress String?

@@ -14,6 +14,7 @@ import {
   manageStakers,
   manageERC20,
   manageNFT,
+  manageDuneAddressTracked,
 } from './loaders'
 import { initialFetch } from './utils'
 import { getAddress, isAddress } from 'viem'
@@ -54,27 +55,18 @@ export async function main({ chainId = '1', roundId }: { chainId: string; roundI
   // manage vote tx metadata
   await manageTx({ chainId, prisma })
 
-  // manage user tx
-  console.log(`Start loading user tx history`)
-  await managerUserTxHistory({ chainId, prisma })
-
-  console.log(`Start loading user internal tx history`)
-  await managerUserInternalTxHistory({ chainId, prisma })
-
-  console.log(`Start loading ERC20 transfer history`)
-  await manageERC20({ prisma, chainId })
-
-  console.log(`Start loading NFT transfer history`)
-  await manageNFT({ prisma, chainId })
-
   // disconnect from database at the end
   await prisma.$disconnect()
 }
 
-export const indexPassports = async () => {
+export const indexPassports = async (rounds?: { chainId: number; roundId: string }[]) => {
   console.log(`Starting Passports indexing`)
 
-  await managePassports({ prisma })
+  await managePassports({ prisma, rounds: rounds || [] })
+
+  if (!rounds || rounds.length === 0) {
+    await manageDuneAddressTracked({ prisma })
+  }
 
   // disconnect from database at the end
   await prisma.$disconnect()
@@ -109,4 +101,21 @@ export const indexStakers = async () => {
 
   // disconnect from database at the end
   await prisma.$disconnect()
+}
+
+export const managePassportArchive = async () => {
+  const rounds = await prisma.round.findMany({
+    where: {
+      roundEndTime: {
+        lte: new Date().valueOf(),
+      },
+      addedLastPassports: false,
+    },
+    select: {
+      chainId: true,
+      roundId: true,
+    },
+  })
+
+  await indexPassports(rounds)
 }
