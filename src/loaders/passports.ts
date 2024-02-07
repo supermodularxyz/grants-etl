@@ -9,6 +9,7 @@ import * as jsonl from 'node-jsonl'
 
 type Props = {
   prisma: PrismaClient
+  rounds: { chainId: number; roundId: string }[]
 }
 
 type Passport = {
@@ -22,7 +23,7 @@ type Passport = {
   stamp_scores: Record<string, string>
 }
 
-const managePassports = async ({ prisma }: Props) => {
+const managePassports = async ({ prisma, rounds = [] }: Props) => {
   const stream = fs.createWriteStream('./passport.jsonl')
   const { body } = await fetch('https://public.scorer.gitcoin.co/passport_scores/registry_score.jsonl')
 
@@ -64,16 +65,31 @@ const managePassports = async ({ prisma }: Props) => {
           stamps: value.stamp_scores,
         }
 
-        await prisma.passport.upsert({
-          where: {
-            userAddress: user.address,
-          },
-          update,
-          create: {
-            userAddress: user.address,
-            ...update,
-          },
-        })
+        if (rounds.length === 0) {
+          await prisma.passport.upsert({
+            where: {
+              userAddress: user.address,
+            },
+            update,
+            create: {
+              userAddress: user.address,
+              ...update,
+            },
+          })
+        } else {
+          for (const round of rounds) {
+            await prisma.passportArchive.upsert({
+              where: {
+                uid: {
+                  userAddress: user.address,
+                  roundId: round.roundId,
+                },
+              },
+              update: {},
+              create: { ...update, ...round, userAddress: user.address },
+            })
+          }
+        }
 
         count += 1
 
@@ -81,6 +97,21 @@ const managePassports = async ({ prisma }: Props) => {
           ` => Committed passport for ${value.passport.address} (${count} total!) ${done ? '\n' : '\r'}`
         )
       }
+    }
+  }
+
+  if (rounds.length > 0) {
+    for (let i = 0; i < rounds.length; i++) {
+      const round = rounds[i]
+
+      prisma.round.update({
+        where: {
+          uid: round,
+        },
+        data: {
+          addedLastPassports: true,
+        },
+      })
     }
   }
 }
