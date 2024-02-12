@@ -1,13 +1,10 @@
 import axios from 'axios'
 import { ethers } from 'ethers'
+import { erc20Abi, formatUnits, getAddress, hexToBigInt, parseUnits } from 'viem'
+import { AnkrProvider, Blockchain } from '@ankr.com/ankr.js'
 import { chainConfig, clients } from './client'
-import { Row } from '../loaders/userTxHistory'
-import { InternalRow } from '../loaders/userInternalTxHistory'
 import { roundABI } from '../abi/round'
 import { payoutABI } from '../abi/payout'
-import { erc20Abi, formatUnits, getAddress, hexToBigInt, parseUnits } from 'viem'
-import { getLatestLogs } from './moralis'
-import { pgn } from 'viem/chains'
 
 type ApplicationTxProps = {
   chainId: string
@@ -35,6 +32,17 @@ export type Price = {
   price: number
   timestamp: number
   block: number
+}
+
+const ankrProvider = new AnkrProvider(process.env.ANKR_PROVIDER as string)
+
+export const supportedChains: Record<number, string> = {
+  1: 'eth',
+  10: 'optimism',
+  137: 'polygon',
+  250: 'fantom',
+  42161: 'arbitrum',
+  534352: 'scroll',
 }
 
 export const grantFetch = async (path: string) => {
@@ -114,49 +122,6 @@ export const createExtraParams = (next_page_params: NextPageParams) => {
   }, '')
 }
 
-export const loadExtraTxData = async ({
-  url,
-  next_page_params,
-  lastBlock = 0,
-}: ExtraParamsArgs): Promise<(Row | InternalRow)[]> => {
-  const extraParams = createExtraParams(next_page_params)
-
-  let success = false
-  let res = undefined
-
-  do {
-    try {
-      res = (await fetch(`${url}&${extraParams}`).then((r) => r.json())) as {
-        items: Row[] | InternalRow[]
-        next_page_params?: NextPageParams
-      }
-
-      console.log(`Beat... ${url}`)
-
-      await new Promise((res, rej) => setTimeout(res, 1000))
-
-      success = true
-    } catch (error) {
-      console.log(`Beat failed, trying again in a second`)
-      await new Promise((res, rej) => setTimeout(res, 1000))
-    }
-  } while (!success)
-
-  if (res) {
-    const rowBlocks = new Set(res.items.map((i) => i.block))
-    const canLoadMore = !rowBlocks.has(lastBlock)
-
-    return [
-      ...res.items,
-      ...(canLoadMore && res.next_page_params
-        ? await loadExtraTxData({ url, next_page_params: res.next_page_params, lastBlock })
-        : []),
-    ]
-  } else {
-    return []
-  }
-}
-
 export const fetchBlockTimestamp = async ({ chainId, blockNumbers }: { chainId: number; blockNumbers: number[] }) => {
   return await Promise.all(
     blockNumbers.map((blockNumber) =>
@@ -167,38 +132,19 @@ export const fetchBlockTimestamp = async ({ chainId, blockNumbers }: { chainId: 
   )
 }
 
-export const getPGNPayoutBlock = async ({ payoutContract }: { payoutContract: `0x${string}` }) => {
-  try {
-    let params: NextPageParams | undefined
-    let items: any[] = []
-
-    do {
-      try {
-        const res = await fetch(
-          `https://explorer.publicgoods.network/api/v2/addresses/${payoutContract}/logs${
-            params?.block_number ? '?' + createExtraParams(params) : ''
-          }`
-        )
-        const data = await res.json()
-
-        params = data.next_page_params
-        items = [...items, ...data.items]
-      } catch (error) {
-        await new Promise((res) =>
-          setTimeout(() => {
-            res(true)
-          }, 20000)
-        )
-        console.log(`Failed with params, trying again`)
-      }
-    } while (params?.block_number)
-
-    return items
-      .sort((a, b) => b.block_number - a.block_number)
-      .find((i) => i.topics[0] === '0xdc7180ca4affc84269428ed20ef950e745126f11691b010c4a7d49458421008f')
-  } catch (error) {
-    return undefined
-  }
+export const getLatestLogs = async ({ chainId, payoutContract }: { chainId: number; payoutContract: string }) => {
+  return (
+    (
+      await ankrProvider.getLogs({
+        blockchain: supportedChains[chainId] as Blockchain,
+        topics: [['0xdc7180ca4affc84269428ed20ef950e745126f11691b010c4a7d49458421008f']],
+        address: [payoutContract],
+        pageSize: 100,
+        decodeLogs: false,
+        descOrder: true,
+      })
+    ).logs[0] || []
+  )
 }
 
 export const fetchRoundDistributionData = async ({
@@ -243,15 +189,12 @@ export const fetchRoundDistributionData = async ({
       const [_, metaPtr] = metaData
 
       if (metaPtr && metaPtr.length > 0) {
-        const logs =
-          chainId === pgn.id
-            ? await getPGNPayoutBlock({ payoutContract })
-            : (await getLatestLogs({ chainId, address: payoutContract }))[0]
+        const log = await getLatestLogs({ chainId, payoutContract })
 
         let token = { price: 0, decimal: 18, code: 'ETH' }
 
-        if (logs && tokenAddress) {
-          const targetBlockNumber = Number(logs.block_number)
+        if (log && tokenAddress) {
+          const targetBlockNumber = Number(log.blockNumber)
           const nTokenAddress = tokenAddress.toLowerCase()
 
           token.decimal =
