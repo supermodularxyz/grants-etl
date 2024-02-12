@@ -6,19 +6,13 @@ import {
   manageRounds,
   manageTx,
   manageVotes,
-  managerUserInternalTxHistory,
-  managerUserTxHistory,
   managePoaps,
   manageArkham,
   manageRoundDistribution,
-  manageStakers,
-  manageERC20,
-  manageNFT,
   manageDuneAddressTracked,
 } from './loaders'
 import { initialFetch } from './utils'
 import { getAddress, isAddress } from 'viem'
-import Moralis from 'moralis'
 
 const prisma = new PrismaClient()
 
@@ -27,32 +21,23 @@ export async function main({ chainId = '1', roundId }: { chainId: string; roundI
 
   await initialFetch(chainId)
 
-  await Moralis.start({
-    apiKey: process.env.MORALIS as string,
-  })
-
-  console.log(`Starting programs and rounds indexing`)
-
   // manage the programs & rounds first
+  console.log(`Starting programs and rounds indexing`)
   await manageRounds({ chainId, prisma, roundId })
 
   console.log(`Starting round Distribution results indexing`)
-
   await manageRoundDistribution({ chainId, prisma })
 
-  console.log(`Starting round applications indexing`)
-
   // manage applications
+  console.log(`Starting round applications indexing`)
   await manageApplications({ chainId, prisma, roundId })
 
-  console.log(`Starting projects' votes indexing`)
-
   // manage votes
+  console.log(`Starting projects' votes indexing`)
   await manageVotes({ chainId, prisma, roundId })
 
-  console.log(`Starting loading tx metadata for votes`)
-
   // manage vote tx metadata
+  console.log(`Starting loading tx metadata for votes`)
   await manageTx({ chainId, prisma })
 
   // disconnect from database at the end
@@ -92,30 +77,4 @@ export const indexArkham = async () => {
 
 export const disconnect = async () => {
   await prisma.$disconnect()
-}
-
-export const indexStakers = async () => {
-  console.log(`Starting Stakers indexing`)
-
-  await manageStakers({ prisma })
-
-  // disconnect from database at the end
-  await prisma.$disconnect()
-}
-
-export const managePassportArchive = async () => {
-  const rounds = await prisma.round.findMany({
-    where: {
-      roundEndTime: {
-        lte: new Date().valueOf(),
-      },
-      addedLastPassports: false,
-    },
-    select: {
-      chainId: true,
-      roundId: true,
-    },
-  })
-
-  await indexPassports(rounds)
 }
