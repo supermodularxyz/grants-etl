@@ -1,5 +1,3 @@
-import { getAddress, isAddress } from 'viem'
-import { loadExtraTxData } from '../utils'
 import { PrismaClient } from '@prisma/client'
 
 type Props = {
