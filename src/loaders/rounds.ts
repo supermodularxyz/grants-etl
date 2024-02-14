@@ -1,6 +1,5 @@
 import { PrismaClient } from '@prisma/client'
-import { getAddress } from 'viem'
-import { request, gql } from 'graphql-request'
+import { getAddress, isAddress } from 'viem'
 import { fetchBlockTimestamp, handleDateString } from '../utils'
 import { getRounds } from '../graphql'
 
@@ -25,12 +24,14 @@ const manageRounds = async ({ chainId, prisma, roundId }: Props) => {
   }
 
   const rounds = []
-  const programs: Set<`0x${string}`> = new Set([])
+  const programs: Set<string> = new Set([])
 
   for (let i = 0; i < roundsData.length; i++) {
     const r = roundsData[i]
 
-    const programContractAddress = getAddress(r.roundMetadata?.programContractAddress)
+    const programContractAddress = isAddress(r.roundMetadata?.programContractAddress)
+      ? getAddress(r.roundMetadata?.programContractAddress)
+      : ''
 
     const [createdAt, updatedAt] = await fetchBlockTimestamp({
       chainId: Number(chainId),
@@ -61,7 +62,7 @@ const manageRounds = async ({ chainId, prisma, roundId }: Props) => {
       programContractAddress,
     })
 
-    if (programContractAddress) {
+    if (programContractAddress.length > 0) {
       programs.add(programContractAddress)
     }
   }
