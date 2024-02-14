@@ -1,6 +1,8 @@
 import { PrismaClient } from '@prisma/client'
 import { getAddress } from 'viem'
-import { fetchBlockTimestamp, grantFetch, handleDateString } from '../utils'
+import { request, gql } from 'graphql-request'
+import { fetchBlockTimestamp, handleDateString } from '../utils'
+import { getRounds } from '../graphql'
 
 type Props = {
   chainId: string
@@ -9,7 +11,8 @@ type Props = {
 }
 
 const manageRounds = async ({ chainId, prisma, roundId }: Props) => {
-  let roundsData = (await grantFetch(`${chainId}/rounds.json`)) as any[]
+  const roundResult = (await getRounds(Number(chainId))) as { rounds: any[] }
+  let roundsData = roundResult.rounds
 
   // if specific round is set, filter it from roundsData and continue
   if (roundId) {
@@ -27,7 +30,7 @@ const manageRounds = async ({ chainId, prisma, roundId }: Props) => {
   for (let i = 0; i < roundsData.length; i++) {
     const r = roundsData[i]
 
-    const programContractAddress = getAddress(r.metadata?.programContractAddress)
+    const programContractAddress = getAddress(r.roundMetadata?.programContractAddress)
 
     const [createdAt, updatedAt] = await fetchBlockTimestamp({
       chainId: Number(chainId),
@@ -35,17 +38,27 @@ const manageRounds = async ({ chainId, prisma, roundId }: Props) => {
     })
 
     rounds.push({
-      ...r,
-      id: undefined,
-      applicationsStartTime: handleDateString(r.applicationsStartTime),
-      applicationsEndTime: handleDateString(r.applicationsEndTime),
-      roundStartTime: handleDateString(r.roundStartTime),
-      roundEndTime: handleDateString(r.roundEndTime),
+      amountUSD: r.totalAmountDonatedInUsd,
+      votes: r.totalDonationsCount,
+      token: r.matchTokenAddress,
+      matchAmount: r.matchAmount,
+      matchAmountUSD: r.matchAmountInUsd,
+      uniqueContributors: r.uniqueDonorsCount,
+      applicationMetaPtr: r.applicationMetadataCid,
+      applicationMetadata: r.applicationMetadata,
+      metaPtr: r.roundMetadataCid,
+      metadata: r.roundMetadata,
+      applicationsStartTime: Number(handleDateString(r.applicationsStartTime)),
+      applicationsEndTime: Number(handleDateString(r.applicationsEndTime)),
+      roundStartTime: Number(handleDateString(r.donationsStartTime)),
+      roundEndTime: Number(handleDateString(r.donationsEndTime)),
+      createdAt,
+      updatedAt,
+      createdAtBlock: Number(r.createdAtBlock),
+      updatedAtBlock: Number(r.updatedAtBlock),
       chainId: Number(chainId),
       roundId: r.id,
       programContractAddress,
-      createdAt,
-      updatedAt,
     })
 
     if (programContractAddress) {

@@ -65,7 +65,6 @@ const manageRoundDistribution = async ({ chainId, prisma }: Props) => {
         ...((await fetchRoundDistributionData({
           chainId: Number(chainId),
           roundId: r.roundId as `0x${string}`,
-          priceList,
         })) as { results: Distro[]; token: { price: number; decimal: number; code: string } }),
       }))
     )

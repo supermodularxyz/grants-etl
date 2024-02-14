@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client'
 import { getAddress } from 'viem'
-import { grantFetch } from '../utils'
+import { GraphQLResponse, getVotes } from '../graphql'
 
 type Props = {
   chainId: string
@@ -33,7 +33,12 @@ const manageVotes = async ({ chainId, prisma, roundId }: Props) => {
   })
 
   for (const [rIndex, round] of rounds.entries()) {
-    const votesList = (await grantFetch(`${chainId}/rounds/${round.roundId}/votes.json`)) as any[]
+    const {
+      round: { donations: votesList },
+    } = (await getVotes({
+      chainId: Number(chainId),
+      roundId: round.roundId.toLowerCase(),
+    })) as GraphQLResponse<{ donations: any[] }>
 
     // logger(`Committing vote: ${vote.transaction}`)
     if (votesList.length > 0) {
@@ -44,7 +49,7 @@ const manageVotes = async ({ chainId, prisma, roundId }: Props) => {
     )
 
     for (const [index, vote] of votesList.entries()) {
-      const address = getAddress(vote.voter)
+      const address = getAddress(vote.donorAddress)
       const currentCount = index + 1
       const isLast = index + 1 === votesList.length
 
@@ -68,19 +73,26 @@ const manageVotes = async ({ chainId, prisma, roundId }: Props) => {
         await prisma.vote.upsert({
           where: {
             uid: {
-              transaction: vote.transaction,
+              transaction: vote.transactionHash,
               roundId: round.id,
               projectId: project.id,
             },
           },
           update: {},
           create: {
-            ...vote,
-            id: undefined,
             voteId: vote.id,
             projectId: project.id,
             roundId: round.id,
             chainId: Number(chainId),
+            transaction: vote.transactionHash,
+            blockNumber: Number(vote.blockNumber),
+            applicationId: vote.applicationId,
+            voter: vote.donorAddress,
+            grantAddress: vote.recipientAddress,
+            token: vote.tokenAddress,
+            amount: vote.amount,
+            amountUSD: vote.amountInUsd,
+            amountRoundToken: vote.amountInRoundMatchToken,
           },
         })
 
