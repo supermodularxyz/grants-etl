@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client'
-import { getApplicationTx, grantFetch } from '../utils'
+import { getApplicationTx } from '../utils'
+import { GraphQLResponse, getApplications } from '../graphql'
 
 type Props = {
   chainId: string
@@ -32,7 +33,11 @@ const manageApplications = async ({ chainId, prisma, roundId }: Props) => {
   })
 
   for (const [rIndex, round] of rounds.entries()) {
-    const applicationList = (await grantFetch(`${chainId}/rounds/${round.roundId}/applications.json`)) as any[]
+    const applicationResponse = (await getApplications({
+      chainId: Number(chainId),
+      roundId: round.roundId.toLowerCase(),
+    })) as GraphQLResponse<{ applications: any[] }>
+    const applicationList = applicationResponse.round.applications
 
     console.log(
       `${applicationList.length} application${
@@ -76,24 +81,24 @@ const manageApplications = async ({ chainId, prisma, roundId }: Props) => {
         },
         update: {
           status: application.status,
-          amountUSD: application.amountUSD,
-          votes: application.votes,
+          amountUSD: application.totalAmountDonatedInUsd,
+          votes: application.totalDonationsCount,
           applicationId: Number(application.id),
         },
         create: {
           roundId: round.id,
           projectId: project.id,
           status: application.status,
-          amountUSD: application.amountUSD,
+          amountUSD: application.totalAmountDonatedInUsd,
           applicationId: Number(application.id),
-          votes: application.votes,
-          uniqueContributors: application.uniqueContributors ?? 0,
+          votes: application.totalDonationsCount,
+          uniqueContributors: application.uniqueDonorsCount ?? 0,
           project_name: application.metadata?.application?.project?.title ?? '',
           project_desc: application.metadata?.application?.project?.description ?? '',
           project_website: application.metadata?.application?.project?.website ?? '',
           project_github: projectGithub ? `https://github.com/${projectGithub}` : undefined,
           user_github: userGithub ? `https://github.com/${userGithub}}` : undefined,
-          applicationMetadata: application.metadata,
+          applicationMetadata: application.metadataCid,
           payoutAddress: application.metadata?.application?.recipient ?? '',
           transaction: (tx?.hash as string) || '',
           tx_gasPrice: tx?.gasPrice,

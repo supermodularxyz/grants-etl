@@ -5,6 +5,7 @@ import { AnkrProvider, Blockchain } from '@ankr.com/ankr.js'
 import { chainConfig, clients } from './client'
 import { roundABI } from '../abi/round'
 import { payoutABI } from '../abi/payout'
+import { getTokenPrice } from '../graphql'
 
 type ApplicationTxProps = {
   chainId: string
@@ -147,15 +148,7 @@ export const getLatestLogs = async ({ chainId, payoutContract }: { chainId: numb
   )
 }
 
-export const fetchRoundDistributionData = async ({
-  chainId,
-  roundId,
-  priceList,
-}: {
-  chainId: number
-  roundId: `0x${string}`
-  priceList: Price[]
-}) => {
+export const fetchRoundDistributionData = async ({ chainId, roundId }: { chainId: number; roundId: `0x${string}` }) => {
   try {
     const client = clients[Number(chainId) as keyof typeof clients]
 
@@ -197,23 +190,39 @@ export const fetchRoundDistributionData = async ({
           const targetBlockNumber = Number(log.blockNumber)
           const nTokenAddress = tokenAddress.toLowerCase()
 
-          token.decimal =
-            nTokenAddress === ethers.constants.AddressZero
-              ? 18
-              : await client.readContract({
-                  address: nTokenAddress as `0x${string}`,
-                  abi: erc20Abi,
+          const tokenContractConfig = {
+            address: nTokenAddress as `0x${string}`,
+            abi: erc20Abi,
+          }
+
+          if (nTokenAddress !== ethers.constants.AddressZero) {
+            const [{ result: decimal }, { result: code }] = await client.multicall({
+              contracts: [
+                {
+                  ...tokenContractConfig,
                   functionName: 'decimals',
-                })
+                },
+                {
+                  ...tokenContractConfig,
+                  functionName: 'symbol',
+                },
+              ],
+            })
 
-          const tokenPrices = priceList.filter((i) => i.token === nTokenAddress).sort((a, b) => b.block - a.block)
-          const targetTokenPrice = tokenPrices.find((i) => i.token === nTokenAddress && i.block <= targetBlockNumber)
+            token.decimal = decimal as number
+            token.code = code as string
+          }
 
-          token.price = targetTokenPrice?.price ?? 0
-          token.code = targetTokenPrice?.code ?? 'ETH'
+          const targetTokenPrice = (await getTokenPrice({
+            chainId,
+            tokenAddress: nTokenAddress,
+            blockNumber: targetBlockNumber.toString(),
+          })) as { prices: any[] }
+
+          token.price = targetTokenPrice.prices[0].priceInUsd ?? 0
         }
 
-        const res = await fetch(`https://ipfs.io/ipfs/${metaPtr}`)
+        const res = await fetch(`https://d16c97c2np8a2o.cloudfront.net/ipfs/${metaPtr}`)
 
         const distro = await res.json()
 
