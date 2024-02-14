@@ -87,7 +87,7 @@ const manageVotes = async ({ chainId, prisma, roundId }: Props) => {
             transaction: vote.transactionHash,
             blockNumber: Number(vote.blockNumber),
             applicationId: vote.applicationId,
-            voter: vote.donorAddress,
+            voter: address,
             grantAddress: vote.recipientAddress,
             token: vote.tokenAddress,
             amount: vote.amount,
