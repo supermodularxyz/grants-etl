@@ -33,12 +33,12 @@ const manageVotes = async ({ chainId, prisma, roundId }: Props) => {
   })
 
   for (const [rIndex, round] of rounds.entries()) {
-    const {
-      round: { donations: votesList },
-    } = (await getVotes({
+    const votesResponse = (await getVotes({
       chainId: Number(chainId),
       roundId: round.roundId.toLowerCase(),
     })) as GraphQLResponse<{ donations: any[] }>
+
+    const votesList = votesResponse?.round?.donations || []
 
     // logger(`Committing vote: ${vote.transaction}`)
     if (votesList.length > 0) {

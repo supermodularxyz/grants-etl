@@ -37,7 +37,8 @@ const manageApplications = async ({ chainId, prisma, roundId }: Props) => {
       chainId: Number(chainId),
       roundId: round.roundId.toLowerCase(),
     })) as GraphQLResponse<{ applications: any[] }>
-    const applicationList = applicationResponse.round.applications
+
+    const applicationList = applicationResponse?.round?.applications || []
 
     console.log(
       `${applicationList.length} application${
