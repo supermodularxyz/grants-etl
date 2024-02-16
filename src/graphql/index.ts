@@ -4,8 +4,14 @@ export type GraphQLResponse<K> = {
   round: K
 }
 
-export const gqlRequest = async (document: any, variable: any) => {
-  return await request(`https://grants-stack-indexer-v2.gitcoin.co/graphql`, document, variable)
+export const gqlRequest = async (document: any, variable: any): Promise<any> => {
+  try {
+    return await request(`https://grants-stack-indexer-v2.gitcoin.co/graphql`, document, variable)
+  } catch (error) {
+    console.log(`Request failed, refreshing in 2 seconds`)
+    await new Promise((res) => setTimeout(res, 2000))
+    return await gqlRequest(document, variable)
+  }
 }
 
 export const getRounds = async (chainId: number) => {
