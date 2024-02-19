@@ -26,7 +26,7 @@ const duneAddressTracked = async ({ prisma }: Props): Promise<any> => {
           LOWER("userAddress") AS "address",
           TRUE AS "isPassportHolder",
           "score",
-          to_timestamp("scoreTimestamp") as "scoreTimestamp"
+          TIMESTAMP 'epoch' + ("public"."Passport"."scoreTimestamp") * INTERVAL '1 second' as "scoreTimestamp"
       FROM
           "public"."Passport"
   ),
