@@ -99,7 +99,7 @@ const manageApplications = async ({ chainId, prisma, roundId }: Props) => {
           project_website: application.metadata?.application?.project?.website ?? '',
           project_github: projectGithub ? `https://github.com/${projectGithub}` : undefined,
           user_github: userGithub ? `https://github.com/${userGithub}}` : undefined,
-          applicationMetadata: application.metadataCid,
+          applicationMetadata: application.metadata,
           payoutAddress: application.metadata?.application?.recipient ?? '',
           transaction: (tx?.hash as string) || '',
           tx_gasPrice: tx?.gasPrice,
