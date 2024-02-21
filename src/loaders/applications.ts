@@ -85,6 +85,7 @@ const manageApplications = async ({ chainId, prisma, roundId }: Props) => {
           amountUSD: application.totalAmountDonatedInUsd,
           votes: application.totalDonationsCount,
           applicationId: Number(application.id),
+          applicationMetadata: application.metadata,
         },
         create: {
           roundId: round.id,
