@@ -123,6 +123,14 @@ const manageRounds = async ({ chainId, prisma, roundId }: Props) => {
         },
       })
 
+      if (chainId !== '424') {
+        await prisma.matchingDistribution.deleteMany({
+          where: {
+            roundKey: dupRound.id,
+          },
+        })
+      }
+
       await prisma.round.delete({
         where: {
           uid,
