@@ -108,7 +108,7 @@ const manageRounds = async ({ chainId, prisma, roundId }: Props) => {
       },
     })
 
-    if (dupRound) {
+    if (dupRound && chainId !== '424') {
       console.log(`Found duplicate round: ${uid.roundId}`)
 
       await prisma.vote.deleteMany({
@@ -123,13 +123,11 @@ const manageRounds = async ({ chainId, prisma, roundId }: Props) => {
         },
       })
 
-      if (chainId !== '424') {
-        await prisma.matchingDistribution.deleteMany({
-          where: {
-            roundKey: dupRound.id,
-          },
-        })
-      }
+      await prisma.matchingDistribution.deleteMany({
+        where: {
+          roundKey: dupRound.id,
+        },
+      })
 
       await prisma.round.delete({
         where: {
