@@ -16,7 +16,8 @@
     "job:passport": "ts-node ./src/jobs/index.ts --passport",
     "job:poap": "ts-node ./src/jobs/index.ts --poap",
     "job:arkham": "ts-node ./src/jobs/index.ts --arkham",
-    "job:stakers": "ts-node ./src/jobs/index.ts --stakers"
+    "job:stakers": "ts-node ./src/jobs/index.ts --stakers",
+    "job:reformat": "ts-node ./src/jobs/index.ts --reformat"
   },
   "devDependencies": {
     "@types/bull": "^4.10.0",

@@ -1,15 +1,29 @@
 // import { ToadScheduler, SimpleIntervalJob, AsyncTask } from 'toad-scheduler'
 import schedule from 'node-schedule'
 import minimist from 'minimist'
-import { main, disconnect, indexPassports, indexPoaps, indexArkham } from '../main'
+import { main, disconnect, indexPassports, indexPoaps, indexArkham, handleAddressReformat } from '../main'
 
-const argv = minimist(process.argv.slice(2), { boolean: ['passport', 'poap', 'arkham'] })
+const argv = minimist(process.argv.slice(2), { boolean: ['passport', 'poap', 'arkham', 'reformat'] })
 
 const rule = new schedule.RecurrenceRule()
 rule.hour = 8
 rule.minute = 15
 
-const { chainId, passport, poap, arkham } = argv
+const { chainId, passport, poap, arkham, reformat } = argv
+
+if (reformat) {
+  const startReformat = async () => {
+    try {
+      await handleAddressReformat()
+    } catch (error) {
+      console.log(error)
+    }
+
+    await disconnect()
+  }
+
+  startReformat()
+}
 
 if (chainId) {
   console.log(`Scheduling job for chainId = ${chainId}`)

@@ -44,14 +44,15 @@ const managePassports = async ({ prisma, rounds = [] }: Props) => {
 
     const isUserAddress = isAddress(value.passport?.address)
     const isCorrectCommunity = Number(value.passport.community) === 335
+    const address = value.passport.address.toLowerCase()
 
     if (isUserAddress && isCorrectCommunity) {
       const user = await prisma.user.upsert({
         where: {
-          address: getAddress(value.passport.address),
+          address,
         },
         create: {
-          address: getAddress(value.passport.address),
+          address,
         },
         update: {},
       })
@@ -68,11 +69,11 @@ const managePassports = async ({ prisma, rounds = [] }: Props) => {
         if (rounds.length === 0) {
           await prisma.passport.upsert({
             where: {
-              userAddress: user.address,
+              userAddress: address,
             },
             update,
             create: {
-              userAddress: user.address,
+              userAddress: address,
               ...update,
             },
           })
@@ -81,21 +82,19 @@ const managePassports = async ({ prisma, rounds = [] }: Props) => {
             await prisma.passportArchive.upsert({
               where: {
                 uid: {
-                  userAddress: user.address,
+                  userAddress: address,
                   roundId: round.roundId,
                 },
               },
               update: {},
-              create: { ...update, ...round, userAddress: user.address },
+              create: { ...update, ...round, userAddress: address },
             })
           }
         }
 
         count += 1
 
-        process.stdout.write(
-          ` => Committed passport for ${value.passport.address} (${count} total!) ${done ? '\n' : '\r'}`
-        )
+        process.stdout.write(` => Committed passport for ${address} (${count} total) ${done ? '\n' : '\r'}`)
       }
     }
   }
