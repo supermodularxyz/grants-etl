@@ -1,5 +1,4 @@
 import { PrismaClient } from '@prisma/client'
-import { getAddress } from 'viem'
 import { GraphQLResponse, getVotes } from '../graphql'
 
 type Props = {
@@ -49,7 +48,7 @@ const manageVotes = async ({ chainId, prisma, roundId }: Props) => {
     )
 
     for (const [index, vote] of votesList.entries()) {
-      const address = getAddress(vote.donorAddress)
+      const address = vote.donorAddress.toLowerCase()
       const currentCount = index + 1
       const isLast = index + 1 === votesList.length
 

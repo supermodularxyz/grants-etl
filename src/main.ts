@@ -13,6 +13,7 @@ import {
 } from './loaders'
 import { initialFetch } from './utils'
 import { getAddress, isAddress } from 'viem'
+import reformatAddress from './scripts'
 
 const prisma = new PrismaClient()
 
@@ -39,6 +40,14 @@ export async function main({ chainId = '1', roundId }: { chainId: string; roundI
   // manage vote tx metadata
   console.log(`Starting loading tx metadata for votes`)
   await manageTx({ chainId, prisma })
+
+  // disconnect from database at the end
+  await prisma.$disconnect()
+}
+
+export const handleAddressReformat = async () => {
+  // run the onetime fix
+  await reformatAddress({ prisma })
 
   // disconnect from database at the end
   await prisma.$disconnect()
