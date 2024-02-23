@@ -7,7 +7,7 @@ type Props = {
 const reformatAddress = async ({ prisma }: Props) => {
   console.log(`Updating users`)
 
-  const resp = await prisma.$executeRaw`UPDATE "User" SET address = LOWER(address) WHERE address != LOWER(address)`
+  const resp = await prisma.$executeRaw`UPDATE "User" SET address = LOWER(address)`
 
   console.log({ resp })
 
