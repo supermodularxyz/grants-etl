@@ -5,23 +5,11 @@ type Props = {
 }
 
 const reformatAddress = async ({ prisma }: Props) => {
-  // users
-  const users = await prisma.user.findMany()
+  console.log(`Updating users`)
 
-  console.log(`Updating ${users.length} users`)
+  const resp = await prisma.$executeRaw`UPDATE "User" SET address = LOWER(address) WHERE address != LOWER(address)`
 
-  for (const [index, user] of users.entries()) {
-    await prisma.user.update({
-      where: {
-        id: user.id,
-      },
-      data: {
-        address: user.address.toLowerCase(),
-      },
-    })
-
-    console.log(`Updated ${index + 1} user: ${user.address}`)
-  }
+  console.log({ resp })
 
   console.log(`Updated user fields`)
 }
