@@ -177,10 +177,10 @@ model Round {
   applicationMetadata    Json
   metaPtr                String
   metadata               Json
-  applicationsStartTime  BigInt
-  applicationsEndTime    BigInt
-  roundStartTime         BigInt
-  roundEndTime           BigInt
+  applicationsStartTime  BigInt?
+  applicationsEndTime    BigInt?
+  roundStartTime         BigInt?
+  roundEndTime           BigInt?
   createdAt              BigInt                 @default(0)
   updatedAt              BigInt                 @default(0)
   createdAtBlock         Int

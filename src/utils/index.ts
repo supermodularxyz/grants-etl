@@ -110,9 +110,7 @@ export const logger = (...args: any) => {
 }
 
 export const handleDateString = (timestamp: any) => {
-  const formattedDateString = new Date(Number(timestamp)).valueOf()
-
-  return String(Number.isNaN(formattedDateString) ? new Date().valueOf() + 157680000 : formattedDateString)
+  return timestamp ? new Date(timestamp).valueOf() : null
 }
 
 export const createExtraParams = (next_page_params: NextPageParams) => {
