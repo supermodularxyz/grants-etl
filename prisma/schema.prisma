@@ -11,13 +11,12 @@ datasource db {
 }
 
 model User {
-  id               Int               @id @default(autoincrement())
-  address          String            @unique
-  votes            Vote[]
-  passport         Passport?
-  poaps            Poap[]
-  Arkham           Arkham[]
-  PassportArchives PassportArchive[]
+  id       Int       @id @default(autoincrement())
+  address  String    @unique
+  votes    Vote[]
+  passport Passport?
+  poaps    Poap[]
+  Arkham   Arkham[]
 }
 
 model Arkham {
@@ -55,84 +54,6 @@ model Passport {
   user           User   @relation(fields: [userAddress], references: [address])
   updatedAt      Int
   stamps         Json?
-}
-
-model PassportArchive {
-  id             Int    @id @default(autoincrement())
-  userAddress    String @unique
-  score          Float
-  scoreThreshold Float
-  scoreTimestamp BigInt
-  user           User   @relation(fields: [userAddress], references: [address])
-  updatedAt      Int
-  stamps         Json?
-  roundId        String
-  chainId        Int
-
-  @@unique([userAddress, roundId], name: "uid")
-}
-
-model Stamp {
-  id         Int       @id @default(autoincrement())
-  address    String
-  provider   String
-  stamp      Json
-  created_at DateTime?
-  updated_at DateTime?
-}
-
-model UserHistory {
-  id               Int      @id @default(autoincrement())
-  wallet           String
-  direction        String
-  block_number     BigInt
-  block_time       DateTime
-  tx_hash          String
-  neighbor_address String
-  symbol           String   @default("")
-  token_amount     Float    @default(0)
-  chain            String
-}
-
-model UserTx {
-  id                Int      @id @default(autoincrement())
-  timestamp         DateTime
-  block             BigInt
-  status            String
-  method            String?
-  hash              String
-  value             String
-  // token_transfers
-  toName            String   @default("")
-  fromName          String   @default("")
-  to                String
-  from              String
-  mainAddress       String?
-  gasUsed           BigInt
-  nonce             Int
-  chainId           Int
-  internalTxIndexed Boolean  @default(false)
-
-  @@unique([hash, nonce, from, chainId], name: "uid")
-}
-
-model UserInternalTx {
-  id          Int      @id @default(autoincrement())
-  timestamp   DateTime
-  block       BigInt
-  success     Boolean  @default(false)
-  hash        String
-  type        String
-  value       String
-  from        String
-  to          String
-  fromName    String   @default("")
-  toName      String   @default("")
-  mainAddress String?
-  gasLimit    Int
-  chainId     Int
-
-  @@unique([hash, to, from, chainId], name: "uid")
 }
 
 model Poap {
@@ -280,91 +201,118 @@ model MatchingDistribution {
   @@unique([projectName, projectId, applicationId, matchPoolPercentage, contributionsCount], name: "uid")
 }
 
-model EthStaker {
-  id        Int      @id @default(autoincrement())
-  wallet    String
-  symbol    String
-  token     String
-  balance   Decimal  @db.Decimal
-  timestamp DateTime
-
-  @@unique([wallet, token], name: "uid")
+model AlphaMatching {
+  id               BigInt  @id @default(autoincrement())
+  round_num        BigInt?
+  grant_id         String? @db.VarChar(255)
+  title            String? @db.VarChar(255)
+  match_amount_dai Float?
+  sub_round_slug   String? @db.VarChar(255)
 }
 
-model Erc20TransferHistory {
-  id                 Int      @id @default(autoincrement())
-  token_name         String
-  token_symbol       String
-  token_decimals     Int
-  from_address       String
-  from_address_label String?
-  to_address         String
-  to_address_label   String?
-  address            String
-  block_hash         String
-  block_number       Int
-  block_timestamp    DateTime
-  transaction_hash   String
-  transaction_index  Int
-  log_index          Int
-  value              Decimal  @db.Decimal
-  possible_spam      Boolean
-  value_decimal      Decimal  @db.Decimal
-  verified_contract  Boolean
-  ownerAddress       String
-  chainId            Int
-
-  @@unique([from_address, to_address, address, log_index, block_number], name: "uid")
+model AlphaRoundGranteeAddresses {
+  id            BigInt  @id @default(autoincrement())
+  title         String? @db.VarChar(255)
+  address       String? @db.VarChar(255)
+  round_name    String? @db.VarChar(255)
+  round_address String? @db.VarChar(255)
 }
 
-model NftTransferHistory {
-  id                  Int      @id @default(autoincrement())
-  block_number        Int
-  block_timestamp     DateTime
-  block_hash          String
-  transaction_hash    String
-  transaction_index   Int
-  log_index           Int
-  value               Decimal  @db.Decimal
-  contract_type       String
-  transaction_type    String
-  token_address       String
-  token_id            String
-  from_address        String
-  from_address_label  String?
-  to_address          String
-  to_address_label    String?
-  amount              Int
-  verified            Int
-  operator            String?
-  possible_spam       Boolean
-  verified_collection Boolean
-  chainId             Int
-  ownerAddress        String
-
-  @@unique([from_address, to_address, token_address, log_index, block_number, chainId], name: "uid")
+model AlphaRoundsAllDonations {
+  id             BigInt    @id @default(autoincrement())
+  title          String?   @db.VarChar(255)
+  round_name     String?   @db.VarChar(255)
+  usd_amount     Float?
+  block_time     DateTime? @db.Timestamptz(6)
+  donor          String?   @db.VarChar(255)
+  token_quantity Decimal?
 }
 
-// model NftBalance {
-//   id                  Int      @id @default(autoincrement())
-//   amount              Int
-//   token_id            String
-//   token_address       String
-//   contract_type       String
-//   owner_of            String
-//   last_metadata_sync  DateTime
-//   last_token_uri_sync DateTime
-//   metadata            Json?
-//   block_number        Int
-//   block_number_minted Int
-//   name                String
-//   symbol              String
-//   token_hash          String
-//   token_uri           String
-//   minter_address      String
-//   verified_collection Boolean
-//   possible_spam       Boolean
-//   chainId             Int
+model cgrantsContributions {
+  id            BigInt    @id @default(autoincrement())
+  voter_address String?
+  grant_id      BigInt?
+  created_on    DateTime?
+  amountUSD     Float?
+  checkout_type String?
+  tx_id         String?
+  match         Boolean?
+  token_address String?
+  token_symbol  String?
+  amountToken   Float?
+  gas_price     Float?
+  anonymous     Boolean?
+}
 
-//   @@unique([token_id, token_address, owner_of, chainId], name: "uid")
-// }
+model cgrantsGrants {
+  id            BigInt    @id @default(autoincrement())
+  grantid       BigInt?
+  createdon     DateTime? @db.Timestamptz(6)
+  name          String?   @db.VarChar(255)
+  slug          String?   @db.VarChar(255)
+  websiteurl    String?   @db.VarChar(255)
+  logo          String?   @db.VarChar(255)
+  payoutaddress String?   @db.VarChar(255)
+  newgrantid    String?
+  twitter       String?   @db.VarChar(255)
+  github        String?   @db.VarChar(255)
+  region        String?   @db.VarChar(255)
+  description   String?
+}
+
+model cgrantsMatches {
+  id             BigInt  @id @default(autoincrement())
+  round_num      BigInt?
+  sub_round_id   BigInt?
+  sub_round_slug String? @db.VarChar(255)
+  grant_id       BigInt?
+  match_amount   Float?
+}
+
+model cgrantsRoundTimings {
+  id         BigInt    @id @default(autoincrement())
+  round_num  BigInt?
+  start_date DateTime? @db.Timestamptz(6)
+  end_date   DateTime? @db.Timestamptz(6)
+}
+
+model GrantsProgramRoundsOnGrantsStack {
+  id            BigInt    @id @default(autoincrement())
+  program       String?   @db.VarChar(255)
+  type          String?   @db.VarChar(255)
+  chain_name    String?   @db.VarChar(255)
+  chain_id      BigInt?
+  round_name    String?   @db.VarChar(255)
+  round_id      String?   @db.VarChar(255)
+  matching_pool BigInt?
+  starting_time DateTime? @db.Timestamptz(6)
+}
+
+model GrantsByRound {
+  id                        BigInt  @id @default(autoincrement())
+  round_num                 BigInt?
+  title                     String? @db.VarChar(255)
+  total_unique_contributors BigInt?
+  total_contributions       BigInt?
+  total_crowdfund_amount    Float?
+  total_match_amount        Float?
+  total_funding             Float?
+  themes                    String? @db.VarChar(255)
+}
+
+model OrgName {
+  id                        BigInt  @id @default(autoincrement())
+  round_num                 BigInt?
+  title                     String? @db.VarChar(255)
+  total_unique_contributors BigInt?
+  total_contributions       BigInt?
+  total_crowdfund_amount    Float?
+  total_match_amount        Float?
+  total_funding             Float?
+  themes                    String? @db.VarChar(255)
+  name                      String? @db.VarChar(255)
+  grantid                   BigInt?
+  payoutaddress             String? @db.VarChar(255)
+  github                    String? @db.VarChar(255)
+  substring                 String?
+}
