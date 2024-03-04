@@ -78,7 +78,7 @@ const manageTx = async ({ chainId, prisma, roundId }: Props): Promise<any> => {
     await Promise.all(
       votes.map(async (v) => {
         // add vote round end time for later toggling
-        if (Math.trunc(Date.now() / 1000) > v.round.roundEndTime) {
+        if (Math.trunc(Date.now() / 1000) > (v.round.roundEndTime ?? 0)) {
           availableRounds.add(v.roundId)
         }
 
