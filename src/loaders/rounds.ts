@@ -16,7 +16,7 @@ const manageRounds = async ({ chainId, prisma, roundId }: Props) => {
 
   // if specific round is set, filter it from roundsData and continue
   if (roundId) {
-    roundsData = roundsData.filter((r) => getAddress(r.id) === roundId)
+    roundsData = roundsData.filter((r) => r.id === roundId.toLowerCase())
 
     if (roundsData.length === 0) {
       console.error('This round does not exist. Please make sure to specify the right chainId for the round')
@@ -61,7 +61,7 @@ const manageRounds = async ({ chainId, prisma, roundId }: Props) => {
         createdAtBlock: Number(r.createdAtBlock),
         updatedAtBlock: Number(r.updatedAtBlock),
         chainId: Number(chainId),
-        roundId: r.id,
+        roundId: r.id.toLowerCase(),
         programContractAddress,
       })
 
@@ -93,51 +93,6 @@ const manageRounds = async ({ chainId, prisma, roundId }: Props) => {
 
   // TODO : Optimize this to skip rounds that are already ended & addedLastVotes = true
   for (const round of rounds) {
-    const uid = {
-      chainId: Number(chainId),
-      roundId: getAddress(round.roundId),
-    }
-
-    // delete duplicate rounds, applications and votes
-    const dupRound = await prisma.round.findUnique({
-      where: {
-        uid,
-      },
-      select: {
-        id: true,
-      },
-    })
-
-    if (dupRound && chainId !== '424') {
-      console.log(`Found duplicate round: ${uid.roundId}`)
-
-      await prisma.vote.deleteMany({
-        where: {
-          roundId: dupRound.id,
-        },
-      })
-
-      await prisma.applicationsInRounds.deleteMany({
-        where: {
-          roundId: dupRound.id,
-        },
-      })
-
-      await prisma.matchingDistribution.deleteMany({
-        where: {
-          roundKey: dupRound.id,
-        },
-      })
-
-      await prisma.round.delete({
-        where: {
-          uid,
-        },
-      })
-
-      console.log(`Deleted duplicate round: ${uid.roundId}`)
-    }
-
     await prisma.round.upsert({
       where: {
         uid: {
